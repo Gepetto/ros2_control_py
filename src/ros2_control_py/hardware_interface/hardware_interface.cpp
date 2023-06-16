@@ -34,14 +34,6 @@ void init_hardware_interface(py::module &m)
       .def_readwrite("parameters",
                      &ComponentInfo::parameters);
 
-  py::class_<ControllerInfo>
-      (hardware_interface,"ControllerInfo")
-      .def(py::init<>())
-      .def_readwrite("name",&ControllerInfo::name)
-      .def_readwrite("type",&ControllerInfo::type)
-      .def_readwrite("claimed_interfaces",
-                     &ControllerInfo::claimed_interfaces);
-
   py::class_<HardwareComponentInfo>
       (hardware_interface,"HardwareComponentInfo")
       .def(py::init<>())
@@ -176,13 +168,6 @@ void init_hardware_interface(py::module &m)
       .def("write",&System::write);
 
   m.def("parse_control_resources_from_urdf",parse_control_resources_from_urdf);
-
-  py::class_<HardwareReadWriteStatus>
-      (hardware_interface,"HardwareReadWriteStatus")
-      .def(py::init<>())
-      .def_readwrite("ok",&HardwareReadWriteStatus::bool)
-      .def_readwrite("failed_hardware_names",
-                     &HardwareReadWriteStatus::failed_hardware_names)
 
 }
 }
