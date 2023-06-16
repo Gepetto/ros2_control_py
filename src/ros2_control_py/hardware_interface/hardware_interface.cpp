@@ -39,7 +39,7 @@ void init_hardware_interface(py::module &m)
       .def(py::init<>())
       .def_readwrite("name",&HardwareComponentInfo::name)
       .def_readwrite("type",&HardwareComponentInfo::type)
-      .def_readwrite("type",&HardwareComponentInfo::class_type)
+      .def_readwrite("class_type",&HardwareComponentInfo::class_type)
       .def_readwrite("state",&HardwareComponentInfo::state)
       .def_readwrite("state_interfaces",
                      &HardwareComponentInfo::state_interfaces)
