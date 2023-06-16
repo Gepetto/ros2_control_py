@@ -22,6 +22,7 @@ void init_hardware_interface(py::module &m)
       .def_readwrite("data_type",&InterfaceInfo::data_type)
       .def_readwrite("size",&InterfaceInfo::size);
 
+
   py::class_<ComponentInfo>
       (hardware_interface,"ComponentInfo")
       .def(py::init<>())
@@ -51,7 +52,8 @@ void init_hardware_interface(py::module &m)
       (hardware_interface,"JointInfo")
       .def(py::init<>())
       .def_readwrite("name",&JointInfo::name)
-      .def_readwrite("interfaces",&JointInfo::interfaces)
+      .def_readwrite("state_interfaces",&JointInfo::state_interfaces)
+      .def_readwrite("command_interfaces",&JointInfo::command_interfaces)
       .def_readwrite("role",&JointInfo::role)
       .def_readwrite("mechanical_reduction",&JointInfo::mechanical_reduction)
       .def_readwrite("offset",&JointInfo::offset);
@@ -60,7 +62,8 @@ void init_hardware_interface(py::module &m)
       (hardware_interface,"ActuatorInfo")
       .def(py::init<>())
       .def_readwrite("name",&ActuatorInfo::name)
-      .def_readwrite("interfaces",&ActuatorInfo::interfaces)
+      .def_readwrite("state_interfaces",&ActuatorInfo::state_interfaces)
+      .def_readwrite("command_interfaces",&ActuatorInfo::command_interfaces)
       .def_readwrite("role",&ActuatorInfo::role)
       .def_readwrite("mechanical_reduction",&ActuatorInfo::mechanical_reduction)
       .def_readwrite("offset",&ActuatorInfo::offset);
@@ -122,7 +125,6 @@ void init_hardware_interface(py::module &m)
       .def(py::init<std::string>())
       .def("get_name",&ReadOnlyHandle::get_name)
       .def("get_interface_name",&ReadOnlyHandle::get_interface_name)
-      .def("get_full_name",&ReadOnlyHandle::get_full_name)
       .def("get_prefix_name",&ReadOnlyHandle::get_prefix_name)
       .def("get_value",&ReadOnlyHandle::get_value);
 
