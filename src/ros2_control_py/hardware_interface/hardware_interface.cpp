@@ -121,7 +121,6 @@ void init_hardware_interface(py::module &m)
       .def(py::init<std::string>())
       .def("get_name",&ReadOnlyHandle::get_name)
       .def("get_interface_name",&ReadOnlyHandle::get_interface_name)
-      .def("get_full_name",&ReadOnlyHandle::get_full_name)
       .def("get_prefix_name",&ReadOnlyHandle::get_prefix_name)
       .def("get_value",&ReadOnlyHandle::get_value);
 
