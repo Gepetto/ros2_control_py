@@ -64,6 +64,27 @@ void init_hardware_interface(py::module &m)
       .def_readwrite("mechanical_reduction",&ActuatorInfo::mechanical_reduction)
       .def_readwrite("offset",&ActuatorInfo::offset);
 
+  py::class_<Actuator>
+      (hardware_interface,"Actuator")
+      .def(py::init<>())
+      .def("initialize",&Actuator::initialize)
+      .def("configure",&Actuator::configure)
+      .def("cleanup",&Actuator::cleanup)
+      .def("shutdown",&Actuator::shutdown)
+      .def("activate",&Actuator::activate)
+      .def("deactivate",&Actuator::deactivate)
+      .def("error",&Actuator::error)
+      .def("export_state_interfaces",&Actuator::export_state_interfaces)
+      .def("export_command_interfaces",&Actuator::export_command_interfaces)
+      .def("prepare_command_mode_switch",
+           &Actuator::prepare_command_mode_switch)
+      .def("perform_command_mode_switch",
+           &Actuator::perform_command_mode_switch)
+      .def("get_name",&Actuator::get_name)
+      .def("get_state",&Actuator::get_state)
+      .def("read",&Actuator::read)
+      .def("write",&Actuator::write);
+
   py::class_<TransmissionInfo>
       (hardware_interface,"TransmissionInfo")
       .def(py::init<>())
@@ -94,6 +115,21 @@ void init_hardware_interface(py::module &m)
                      &HardwareInfo::transmissions)
       .def_readwrite("original_xml",
                      &HardwareInfo::original_xml);
+
+  py::class_<ReadOnlyHandle>
+      (hardware_interface,"ReadOnlyHandle")
+      .def(py::init<std::string>())
+      .def("get_name",&ReadOnlyHandle::get_name)
+      .def("get_interface_name",&ReadOnlyHandle::get_interface_name)
+      .def("get_full_name",&ReadOnlyHandle::get_full_name)
+      .def("get_prefix_name",&ReadOnlyHandle::get_prefix_name)
+      .def("get_value",&ReadOnlyHandle::get_value);
+
+  py::class_<ReadWriteHandle>
+      (hardware_interface,"ReadWriteHandle")
+      .def(py::init<std::string>())
+      .def("set_value",&ReadWriteHandle::get_value);
+
 
   py::class_<Sensor>
       (hardware_interface,"Sensor")
@@ -129,7 +165,10 @@ void init_hardware_interface(py::module &m)
       .def("get_name",&System::get_name)
       .def("get_state",&System::get_state)
       .def("read",&System::read)
-      .def("write",&System::write);  
+      .def("write",&System::write);
+
+  m.def("parse_control_resources_from_urdf",parse_control_resources_from_urdf);
+
 }
 }
 }

@@ -2,6 +2,10 @@
 
 namespace py = pybind11;
 
+#include <hardware_interface/actuator_interface.hpp>
+#include <hardware_interface/actuator.hpp>
+#include <hardware_interface/component_parser.hpp>
+#include <hardware_interface/handle.hpp>
 #include <hardware_interface/hardware_info.hpp>
 #include <hardware_interface/hardware_component_info.hpp>
 #include <hardware_interface/sensor_interface.hpp>
