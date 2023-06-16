@@ -105,8 +105,9 @@ void init_hardware_interface(py::module &m)
       .def(py::init<>())
       .def_readwrite("name",&HardwareInfo::name)
       .def_readwrite("type",&HardwareInfo::type)
-      .def_readwrite("hardware_class_type",
-                     &HardwareInfo::hardware_class_type)
+      .def_readwrite("is_async",&HardwareInfo::is_async)
+      .def_readwrite("hardware_plugin_name",
+                     &HardwareInfo::hardware_plugin_name)
       .def_readwrite("hardware_parameters",
                      &HardwareInfo::hardware_parameters)
       .def_readwrite("joints",
