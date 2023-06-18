@@ -15,17 +15,24 @@ find_package(pybind11 REQUIRED)
 
 ament_python_install_package(ros2_control_py)
 
-pybind11_add_module(core
-	src/ros2_control_py/core.cpp
-	src/ros2_control_py/hardware_interface/hardware_interface.cpp
-      )
+pybind11_add_module(hardware_interface_py
+  src/ros2_control_py/hardware_interface_py.cpp
+  src/ros2_control_py/hardware_interface/actuator_interface_py.cpp
+  src/ros2_control_py/hardware_interface/actuator_py.cpp
+  src/ros2_control_py/hardware_interface/hardware_component_info_py.cpp
+  src/ros2_control_py/hardware_interface/hardware_info_py.cpp
+  src/ros2_control_py/hardware_interface/sensor_interface_py.cpp
+  src/ros2_control_py/hardware_interface/sensor_py.cpp
+  src/ros2_control_py/hardware_interface/system_interface_py.cpp
+  src/ros2_control_py/hardware_interface/system_py.cpp
+)
 
-ament_target_dependencies(core PUBLIC
+ament_target_dependencies(hardware_interface_py PUBLIC
   rclcpp
   rclcpp_lifecycle
   hardware_interface
 )
 
-install(TARGETS core
-     DESTINATION "${PYTHON_INSTALL_DIR}/ros2_control_py")
+install(TARGETS hardware_interface_py
+  DESTINATION "${PYTHON_INSTALL_DIR}/ros2_control_py")
 ament_package()
