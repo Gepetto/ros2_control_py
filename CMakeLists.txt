@@ -19,8 +19,12 @@ pybind11_add_module(hardware_interface_py
   src/ros2_control_py/hardware_interface_py.cpp
   src/ros2_control_py/hardware_interface/actuator_interface_py.cpp
   src/ros2_control_py/hardware_interface/actuator_py.cpp
+  src/ros2_control_py/hardware_interface/handle_py.cpp
   src/ros2_control_py/hardware_interface/hardware_component_info_py.cpp
   src/ros2_control_py/hardware_interface/hardware_info_py.cpp
+  src/ros2_control_py/hardware_interface/loaned_command_interface_py.cpp
+  src/ros2_control_py/hardware_interface/loaned_state_interface_py.cpp
+  src/ros2_control_py/hardware_interface/resource_manager_py.cpp
   src/ros2_control_py/hardware_interface/sensor_interface_py.cpp
   src/ros2_control_py/hardware_interface/sensor_py.cpp
   src/ros2_control_py/hardware_interface/system_interface_py.cpp
