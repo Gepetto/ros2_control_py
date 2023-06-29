@@ -29,6 +29,7 @@ pybind11_add_module(hardware_interface_py
   src/ros2_control_py/hardware_interface/sensor_py.cpp
   src/ros2_control_py/hardware_interface/system_interface_py.cpp
   src/ros2_control_py/hardware_interface/system_py.cpp
+  src/ros2_control_py/hardware_interface/types_py.cpp
 )
 
 ament_target_dependencies(hardware_interface_py PUBLIC
