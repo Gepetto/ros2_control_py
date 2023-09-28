@@ -1,0 +1,6 @@
+[submodule "common"]
+	path = common
+	url = https://github.com/satya-das/common.git
+[submodule "CppParser"]
+	path = CppParser
+	url = https://github.com/satya-das/CppParser.git

@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.5)
 project(ros2_control_py)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 20)
+endif()
+
+add_subdirectory(CppParser)
+
+if(NOT WIN32)
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
@@ -16,15 +26,24 @@ find_package(pybind11 REQUIRED)
 ament_python_install_package(ros2_control_py)
 
 pybind11_add_module(ros2_control_py_core
-	src/ros2_control_py/core.cpp
-	src/ros2_control_py/hardware_interface/hardware_interface.cpp
-      )
+  src/ros2_control_py/core.cpp
+  src/ros2_control_py/hardware_interface/hardware_interface.cpp
+)
 
 ament_target_dependencies(ros2_control_py_core PUBLIC
   rclcpp
   rclcpp_lifecycle
-  hardware_interface)
+  hardware_interface
+)
+
+target_include_directories(
+  ros2_control_py_core
+  PRIVATE
+  include
+)
 
 install(TARGETS ros2_control_py_core
-     DESTINATION "${PYTHON_INSTALL_DIR}/ros2_control_py")
+  DESTINATION "${PYTHON_INSTALL_DIR}/ros2_control_py"
+)
+
 ament_package()
