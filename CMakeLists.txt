@@ -2,10 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(ros2_control_py)
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
-
-add_subdirectory(CppParser)
 
 if(NOT WIN32)
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -23,6 +21,10 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
+add_subdirectory(CppParser)
+
+set(hi_py_cpp ${CMAKE_CURRENT_BINARY_DIR}/src/hardware_interface_py.cpp)
+
 add_executable(ros2_control_py_builder
   src/ros2_control_py_builder/main.cpp
 )
@@ -31,15 +33,15 @@ target_link_libraries(ros2_control_py_builder
   cppparser
 )
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
-  COMMAND ros2_control_py_builder /opt/ros/humble/include/hardware_interface ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
+  OUTPUT ${hi_py_cpp}
+  COMMAND ros2_control_py_builder /opt/ros/humble/include/hardware_interface ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ros2_control_py_builder
 )
 
 ament_python_install_package(ros2_control_py)
 
 pybind11_add_module(ros2_control_py_core
-  ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
+  ${hi_py_cpp}
 )
 ament_target_dependencies(ros2_control_py_core
   PUBLIC
@@ -49,8 +51,7 @@ ament_target_dependencies(ros2_control_py_core
 )
 target_include_directories(ros2_control_py_core
   PRIVATE
-  include
-  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 install(
   TARGETS ros2_control_py_core
