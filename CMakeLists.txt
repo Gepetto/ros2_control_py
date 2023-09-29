@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.5)
 project(ros2_control_py)
 
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 if(NOT WIN32)
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-ggdb3 -O0)
 endif()
 
 find_package(ament_cmake REQUIRED)

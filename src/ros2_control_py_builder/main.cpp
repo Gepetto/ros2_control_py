@@ -3,10 +3,16 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <unordered_map>
+
 // CppParser
 #include <cppast.h>
 #include <cppcompound-info-accessor.h>
+#include <cppconst.h>
+#include <cppobj-info-accessor.h>
 #include <cppparser.h>
+#include <cppwriter.h>
 
 #define ASSERT(Assert, ...)                \
   do {                                     \
@@ -55,8 +61,81 @@ CppCompoundPtr parse_file(CppParser& parser, const std::string& filename) {
   return cppCompound;
 }
 
-void write_named_hi_py_hpp(const fs::path& inc_hi_dir,
-                           const std::string& name) {
+template <typename T, typename U>
+class Sep;
+
+template <typename T, typename U>
+std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep);
+
+template <typename T, typename U>
+class Sep {
+ public:
+  Sep(const T& iterable, const U& separator)
+      : iterable_{iterable}, separator_{separator} {}
+
+  friend std::ostream& operator<< <>(std::ostream&, const Sep<T, U>&);
+
+ private:
+  const T& iterable_;
+  const U& separator_;
+};
+
+template <typename T, typename U>
+std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep) {
+  auto it = std::begin(sep.iterable_);
+  if (it == std::end(sep.iterable_)) return os;
+  os << *it;
+  for (++it; it != std::end(sep.iterable_); ++it) os << sep.separator_ << *it;
+  return os;
+}
+
+struct Attr {
+  Attr(const std::string& name) : name{name} {}
+
+  std::string name;
+};
+
+struct Ctor {
+  Ctor(std::vector<std::string>&& args) : args{std::move(args)} {}
+
+  std::vector<std::string> args;
+};
+
+struct Memb {
+  Memb(const std::string& name) : name{name} {}
+
+  std::string name;
+};
+
+struct Cls {
+  Cls(const std::string& name, const std::string& mother)
+      : name{name}, mother{mother} {}
+
+  std::string name;
+  std::string mother;
+  std::vector<Attr> attrs;
+  std::vector<Memb> membs;
+  std::vector<Ctor> ctors;
+};
+
+std::ostream& operator<<(std::ostream& os, const Cls& cls) {
+  os << "  py::class_<" << cls.name
+     << (cls.mother.empty() ? "" : ", " + cls.mother)
+     << ">(hardware_interface_py, \"" << cls.name << "\")";
+  for (const Ctor& ctor : cls.ctors)
+    os << "\n      .def(py::init<" << Sep(ctor.args, ", ") << ">())";
+  for (const Memb& memb : cls.membs)
+    os << "\n      .def(\"" << memb.name << "\", &" << cls.name
+       << "::" << memb.name << ")";
+  for (const Attr& attr : cls.attrs)
+    os << "\n      .def_readwrite(\"" << attr.name << "\", &" << cls.name
+       << "::" << attr.name << ")";
+  os << ";\n";
+  return os;
+}
+
+void write_named_hi_py_hpp(const fs::path& inc_hi_dir, const std::string& name,
+                           const std::vector<Cls>& classes) {
   fs::path path = inc_hi_dir / (name + "_py.hpp");
   std::ofstream ofs{path, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "Could not open " << path);
@@ -75,9 +154,8 @@ namespace py = pybind11;
 inline void init_)"
       << name << R"((py::module &hardware_interface_py)
 {
-)";
-  // TODO
-  ofs << R"(}
+)" << Sep(classes, "\n")
+      << R"(}
 
 }
 )";
@@ -131,8 +209,10 @@ int main(int argc, char** argv) {
 
   CppParser parser;
   parser.addIgnorableMacro("HARDWARE_INTERFACE_PUBLIC");
+  CppWriter writer;
 
-  std::vector<std::string> names;
+  std::vector<std::string> headers;
+  std::unordered_map<std::string, std::vector<Cls>> classes;
 
   for (auto entry : fs::directory_iterator{hi_dir}) {
     const fs::path& path = entry.path();
@@ -142,11 +222,12 @@ int main(int argc, char** argv) {
       continue;
 
     std::string filename = path.filename().string();
-    names.emplace_back(filename.substr(0, filename.rfind('.')));
+    headers.emplace_back(filename.substr(0, filename.rfind('.')));
+    classes.insert({headers.back(), {}});
 
     const CppCompoundPtr ast = parse_file(parser, path.string());
     ASSERT(ast, "Could not parse " << path);
-    std::cerr << "Parsed " << path << std::endl;
+    // std::cerr << "Parsed " << path << std::endl;
     for (const CppObjPtr& obj_ns : ast->members()) {
       CppConstCompoundEPtr ns = obj_ns;
       if (!ns || !isNamespace(ns) || ns->name() != "hardware_interface")
@@ -154,7 +235,49 @@ int main(int argc, char** argv) {
       for (const CppObjPtr& obj_cls : ns->members()) {
         CppConstCompoundEPtr cls = obj_cls;
         if (!cls || (!isClass(cls) && !isStruct(cls))) continue;
-        std::cerr << "Found class: " << cls->name() << std::endl;
+        // std::cerr << "Found class: " << cls->name() << std::endl;
+        const CppInheritanceListPtr& parents = cls->inheritanceList();
+        ASSERT(!parents || parents->size() <= 1,
+               "Too many parents for " << cls->name());
+        bool has_mother = parents && !parents->empty() &&
+                          parents->front().inhType == CppAccessType::kPublic;
+        Cls& cls_rep = classes[headers.back()].emplace_back(
+            cls->name(), has_mother ? parents->front().baseName : "");
+        for (const CppObjPtr& obj_memb : cls->members()) {
+          if (!isPublic(obj_memb)) continue;
+          CppConstVarEPtr attr = obj_memb;
+          if (attr) {
+            cls_rep.attrs.emplace_back(attr->name());
+          }
+          CppConstructorEPtr ctor = obj_memb;
+          if (ctor && !ctor->isCopyConstructor() &&
+              !ctor->isMoveConstructor() && !cls->hasPureVirtual()) {
+            std::vector<std::string> args;
+            const CppParamVector* params = ctor->params();
+            bool valid = true;
+            if (params) {
+              for (const CppObjPtr& param : *params) {
+                CppConstVarEPtr var = param;
+                ASSERT(var, "that was not a var");
+                std::ostringstream oss;
+                writer.emitVarType(var->varType(), oss);
+                if (oss.str() == "Deleter&&" ||
+                    oss.str().find("std::unique_ptr<") != std::string::npos) {
+                  valid = false;
+                  break;
+                }
+                args.emplace_back(std::move(oss).str());
+              }
+            }
+            if (valid) cls_rep.ctors.emplace_back(std::move(args));
+          }
+          CppConstFunctionEPtr memb = obj_memb;
+          if (memb && memb->name_.find("operator") == std::string::npos &&
+              memb->name_ != "get_full_name" &&
+              memb->name_ != "import_component") {
+            cls_rep.membs.emplace_back(memb->name_);
+          }
+        }
       }
     }
   }
@@ -166,9 +289,10 @@ int main(int argc, char** argv) {
   fs::create_directories(src_dir);
   fs::create_directories(inc_hi_dir);
 
-  for (const std::string& name : names) write_named_hi_py_hpp(inc_hi_dir, name);
+  for (const auto& [name, classes] : classes)
+    write_named_hi_py_hpp(inc_hi_dir, name, classes);
 
-  write_hi_py_cpp(hi_py, names);
+  write_hi_py_cpp(hi_py, headers);
 
   return 0;
 }
