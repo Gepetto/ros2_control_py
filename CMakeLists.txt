@@ -31,17 +31,15 @@ target_link_libraries(ros2_control_py_builder
   cppparser
 )
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface/hardware_interface2.cpp
-  COMMAND ros2_control_py_builder ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface/hardware_interface2.cpp
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
+  COMMAND ros2_control_py_builder /opt/ros/humble/include/hardware_interface ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
   DEPENDS ros2_control_py_builder
 )
 
 ament_python_install_package(ros2_control_py)
 
 pybind11_add_module(ros2_control_py_core
-  src/ros2_control_py/core.cpp
-  src/ros2_control_py/hardware_interface/hardware_interface.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface/hardware_interface2.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp
 )
 ament_target_dependencies(ros2_control_py_core
   PUBLIC
