@@ -7,7 +7,7 @@
 #include "structs.hpp"
 #include "utils.hpp"
 
-namespace fs = std::filesystem;
+namespace sfs = std::filesystem;
 
 /// @brief output a `Cls` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls);
@@ -18,10 +18,10 @@ inline std::ostream& operator<<(std::ostream& os, const Enum& enu);
 /// @brief output a `Var` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const Var& var);
 /// @brief write a hpp file in `inc_hi_dir` for header `header`
-inline void write_named_hi_py_hpp(const fs::path& inc_hi_dir,
+inline void write_named_hi_py_hpp(const sfs::path& inc_hi_dir,
                                   const Header& header);
 /// @brief write a cpp file in `hi_py` calling bindings from headers `headers`
-inline void write_hi_py_cpp(const fs::path& hi_py,
+inline void write_hi_py_cpp(const sfs::path& hi_py,
                             const std::vector<Header>& headers);
 
 // Impl
@@ -85,8 +85,8 @@ inline std::ostream& operator<<(std::ostream& os, const Var& var) {
             << "\", []() { return std::string{" << var.name << "}; });";
 }
 
-void write_named_hi_py_hpp(const fs::path& inc_hi_dir, const Header& header) {
-  fs::path path = inc_hi_dir / (header.name + "_py.hpp");
+void write_named_hi_py_hpp(const sfs::path& inc_hi_dir, const Header& header) {
+  sfs::path path = inc_hi_dir / (header.name + "_py.hpp");
   std::ofstream ofs{path, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "Could not open " << path);
   ofs << R"(// pybind11
@@ -122,7 +122,7 @@ inline void init_)"
 )";
 }
 
-void write_hi_py_cpp(const fs::path& hi_py,
+void write_hi_py_cpp(const sfs::path& hi_py,
                      const std::vector<Header>& headers) {
   std::ofstream ofs{hi_py, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "could not open " << hi_py);

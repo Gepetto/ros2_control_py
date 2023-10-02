@@ -2,6 +2,7 @@
 
 // STL
 #include <algorithm>
+#include <filesystem>
 // CppParser
 #include <cppast.h>
 #include <cppcompound-info-accessor.h>
@@ -13,6 +14,8 @@
 // ros2_control_py_builder
 #include "structs.hpp"
 #include "utils.hpp"
+
+namespace sfs = std::filesystem;
 
 inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr) {
   cls.attrs.emplace_back(attr->name());
@@ -141,7 +144,7 @@ inline void parse_namespace(Header& header, CppWriter& writer,
   }
 }
 
-inline void parse_header(std::vector<Header>& headers, fs::path path,
+inline void parse_header(std::vector<Header>& headers, sfs::path path,
                          const std::string& name) {
   CppParser parser;
   parser.addIgnorableMacro("HARDWARE_INTERFACE_PUBLIC");

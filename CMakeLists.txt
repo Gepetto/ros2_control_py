@@ -21,7 +21,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
-add_subdirectory(CppParser)
+add_subdirectory(cppparser)
 
 set(hi_py_cpp ${CMAKE_CURRENT_BINARY_DIR}/src/hardware_interface_py.cpp)
 
