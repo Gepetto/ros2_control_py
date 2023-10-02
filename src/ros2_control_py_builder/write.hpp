@@ -13,14 +13,16 @@ namespace fs = std::filesystem;
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls);
 /// @brief output a `VMemb` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const VMemb& vmemb);
-/// @brief write a hpp file in `inc_hi_dir` for header `name` with classes
-/// `classes`
+/// @brief output a `Enum` to write an hpp
+inline std::ostream& operator<<(std::ostream& os, const Enum& enu);
+/// @brief output a `Var` to write an hpp
+inline std::ostream& operator<<(std::ostream& os, const Var& var);
+/// @brief write a hpp file in `inc_hi_dir` for header `header`
 inline void write_named_hi_py_hpp(const fs::path& inc_hi_dir,
-                                  const std::string& name,
-                                  const std::vector<Cls>& classes);
-/// @brief write a cpp file in `hi_py` calling bindings from headers `names`
+                                  const Header& header);
+/// @brief write a cpp file in `hi_py` calling bindings from headers `headers`
 inline void write_hi_py_cpp(const fs::path& hi_py,
-                            const std::vector<std::string>& names);
+                            const std::vector<Header>& headers);
 
 // Impl
 
@@ -68,45 +70,60 @@ inline std::ostream& operator<<(std::ostream& os, const VMemb& vmemb) {
 )";
 }
 
-void write_named_hi_py_hpp(const fs::path& inc_hi_dir, const std::string& name,
-                           const std::vector<Cls>& classes) {
-  fs::path path = inc_hi_dir / (name + "_py.hpp");
+inline std::ostream& operator<<(std::ostream& os, const Enum& enu) {
+  ASSERT(!enu.items.empty(), "empty enum");
+  os << "  py::enum_<" << enu.name << ">(hardware_interface_py, \"" << enu.name
+     << "\")\n";
+  for (const std::string& item : enu.items)
+    os << "      .value(\"" << item << "\", " << enu.name << "::" << item
+       << ")\n";
+  return os << "      .export_values();\n";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Var& var) {
+  return os << "  hardware_interface_py.def(\"" << var.name
+            << "\", []() { return std::string{" << var.name << "}; });";
+}
+
+void write_named_hi_py_hpp(const fs::path& inc_hi_dir, const Header& header) {
+  fs::path path = inc_hi_dir / (header.name + "_py.hpp");
   std::ofstream ofs{path, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "Could not open " << path);
   ofs << R"(// pybind11
 #include <pybind11/pybind11.h>
 // hardware_interface
 #include <hardware_interface/)"
-      << name << R"(.hpp>
+      << header.name << R"(.hpp>
 
 namespace ros2_control_py::bind_hardware_interface
 {
 
-using namespace hardware_interface;
 namespace py = pybind11;
 )";
-  for (const Cls& cls : classes) {
+  for (const std::string& ns : header.namespaces)
+    ofs << "using namespace " << ns << ";\n";
+  for (const Cls& cls : header.classes) {
     if (cls.vmembs.empty()) continue;
     ofs << "\nclass Py" << cls.name << ": public " << cls.name
         << "{\n public:\n  using " << cls.name << "::" << cls.name << ";\n";
     for (const VMemb& vmemb : cls.vmembs) ofs << vmemb;
     ofs << "};\n";
   }
-  std::string proper = name;
+  std::string proper = header.name;
   std::replace(proper.begin(), proper.end(), '/', '_');
   ofs << R"(
 inline void init_)"
       << proper << R"((py::module &hardware_interface_py)
 {
-)" << Sep(classes, "\n")
-      << R"(}
+)" << Sep(header.vars, "\n")
+      << Sep(header.enums, "\n") << Sep(header.classes, "\n") << R"(}
 
 }
 )";
 }
 
 void write_hi_py_cpp(const fs::path& hi_py,
-                     const std::vector<std::string>& names) {
+                     const std::vector<Header>& headers) {
   std::ofstream ofs{hi_py, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "could not open " << hi_py);
   ofs << R"(// pybind11
@@ -116,8 +133,8 @@ void write_hi_py_cpp(const fs::path& hi_py,
 
 // hardware_interface_py
 )";
-  for (const std::string& name : names)
-    ofs << "#include <hardware_interface/" << name << "_py.hpp>\n";
+  for (const Header& header : headers)
+    ofs << "#include <hardware_interface/" << header.name << "_py.hpp>\n";
   ofs << R"(
 namespace py = pybind11;
 
@@ -133,8 +150,8 @@ PYBIND11_MODULE(hardware_interface_py, m)
 
   // Construct module classes
 )";
-  for (const std::string& name : names) {
-    std::string proper = name;
+  for (const Header& header : headers) {
+    std::string proper = header.name;
     std::replace(proper.begin(), proper.end(), '/', '_');
     ofs << "  ros2_control_py::bind_hardware_interface::init_" << proper
         << "(m);\n";

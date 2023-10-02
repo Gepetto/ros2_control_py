@@ -2,7 +2,6 @@
 
 // STL
 #include <algorithm>
-#include <unordered_map>
 // CppParser
 #include <cppast.h>
 #include <cppcompound-info-accessor.h>
@@ -66,27 +65,22 @@ inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb,
   }
 }
 
-inline void parse_class_using(
-    Cls& cls, std::vector<std::string>& headers,
-    std::unordered_map<std::string, std::vector<Cls>>& classes) {
-  auto& cls_vec = classes[headers.back()];
+inline void parse_class_using(Cls& cls, Header& header) {
   auto it = std::find_if(
-      cls_vec.begin(), cls_vec.end(),
+      header.classes.begin(), header.classes.end(),
       [cls](const Cls& other) { return other.name == cls.mother; });
-  ASSERT(it != cls_vec.end(), "Could not find parent class");
+  ASSERT(it != header.classes.end(), "Could not find parent class");
   cls.ctors.insert(cls.ctors.end(), it->ctors.begin(), it->ctors.end());
 }
 
-inline void parse_class(
-    std::vector<std::string>& headers,
-    std::unordered_map<std::string, std::vector<Cls>>& classes,
-    CppWriter& writer, CppConstCompoundEPtr cls) {
+inline void parse_class(Header& header, CppWriter& writer,
+                        CppConstCompoundEPtr cls) {
   const CppInheritanceListPtr& parents = cls->inheritanceList();
   ASSERT(!parents || parents->size() <= 1,
          "Too many parents for " << cls->name());
   bool has_mother = parents && !parents->empty() &&
                     parents->front().inhType == CppAccessType::kPublic;
-  Cls& cls_rep = classes[headers.back()].emplace_back(
+  Cls& cls_rep = header.classes.emplace_back(
       cls->name(), has_mother ? parents->front().baseName : "");
   for (const CppObjPtr& obj_memb : cls->members()) {
     if (!isPublic(obj_memb)) continue;
@@ -108,40 +102,52 @@ inline void parse_class(
     }
     CppConstUsingDeclEPtr use = obj_memb;
     if (use && use->name_ == cls_rep.mother + "::" + cls_rep.mother) {
-      parse_class_using(cls_rep, headers, classes);
+      parse_class_using(cls_rep, header);
       continue;
     }
   }
 }
 
-inline void parse_namespace(
-    std::vector<std::string>& headers,
-    std::unordered_map<std::string, std::vector<Cls>>& classes,
-    CppWriter& writer, CppConstCompoundEPtr ns) {
-  for (const CppObjPtr& obj_cls : ns->members()) {
-    CppConstCompoundEPtr compound = obj_cls;
+inline void parse_enum(Header& header, CppEnumEPtr enu) {
+  header.enums.emplace_back(enu->name_);
+  for (const auto& item : *enu->itemList_)
+    header.enums.back().items.emplace_back(item->name_);
+}
+
+inline void parse_var(Header& header, CppVarEPtr var) {
+  header.vars.emplace_back(var->name());
+}
+
+inline void parse_namespace(Header& header, CppWriter& writer,
+                            CppConstCompoundEPtr ns, std::string name) {
+  header.namespaces.emplace_back(name);
+  for (const CppObjPtr& obj : ns->members()) {
+    CppVarEPtr var = obj;
+    if (var) {
+      parse_var(header, var);
+      continue;
+    }
+    CppEnumEPtr enu = obj;
+    if (enu && enu->itemList_) {
+      parse_enum(header, enu);
+      continue;
+    }
+    CppConstCompoundEPtr compound = obj;
     if (!compound) continue;
-    if (isNamespace(compound)) {
-      parse_namespace(headers, classes, writer, compound);
-      continue;
-    }
-    if (isClass(compound) || isStruct(compound)) {
-      parse_class(headers, classes, writer, compound);
-      continue;
-    }
+    if (isNamespace(compound))
+      parse_namespace(header, writer, compound, name + "::" + compound->name());
+    else if (isClass(compound) || isStruct(compound))
+      parse_class(header, writer, compound);
   }
 }
 
-inline void parse_header(
-    std::vector<std::string>& headers,
-    std::unordered_map<std::string, std::vector<Cls>>& classes, fs::path path,
-    const std::string& name) {
+inline void parse_header(std::vector<Header>& headers, fs::path path,
+                         const std::string& name) {
   CppParser parser;
   parser.addIgnorableMacro("HARDWARE_INTERFACE_PUBLIC");
   CppWriter writer;
 
   headers.emplace_back(name.substr(0, name.rfind('.')));
-  classes.insert({headers.back(), {}});
 
   const CppCompoundPtr ast = parse_file(parser, path.string());
   ASSERT(ast, "Could not parse " << path);
@@ -149,6 +155,6 @@ inline void parse_header(
   for (const CppObjPtr& obj_ns : ast->members()) {
     CppConstCompoundEPtr ns = obj_ns;
     if (!ns || !isNamespace(ns) || ns->name() != "hardware_interface") continue;
-    parse_namespace(headers, classes, writer, ns);
+    parse_namespace(headers.back(), writer, ns, ns->name());
   }
 }

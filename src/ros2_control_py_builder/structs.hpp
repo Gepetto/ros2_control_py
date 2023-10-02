@@ -50,3 +50,22 @@ struct Cls {
   std::vector<Ctor> ctors;
   std::vector<VMemb> vmembs;
 };
+
+struct Enum {
+  std::string name;
+  std::vector<std::string> items;
+};
+
+struct Var {
+  std::string name;
+};
+
+struct Header {
+  Header(const std::string& name) : name{name} {}
+
+  std::string name;
+  std::vector<std::string> namespaces;
+  std::vector<Cls> classes;
+  std::vector<Enum> enums;
+  std::vector<Var> vars;
+};
