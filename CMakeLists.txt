@@ -20,7 +20,7 @@ find_package(pybind11 REQUIRED)
 
 add_subdirectory(cppparser)
 
-set(hi_py_cpp ${CMAKE_CURRENT_BINARY_DIR}/src/ros2_control_py/hardware_interface_py.cpp)
+set(hi_py_cpp ${CMAKE_CURRENT_BINARY_DIR}/src/hardware_interface_py.cpp)
 
 add_executable(ros2_control_py_builder
   src/ros2_control_py_builder/main.cpp

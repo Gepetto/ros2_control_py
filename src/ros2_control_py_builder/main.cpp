@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     parse_header(headers, path, name);
   }
 
-  fs::path src_dir = dst_dir / "src" / "ros2_control_py";
+  fs::path src_dir = dst_dir / "src";
   fs::path hi_py = src_dir / "hardware_interface_py.cpp";
   fs::path inc_hi_dir = src_dir / "hardware_interface";
 
