@@ -27,12 +27,12 @@ int main(int argc, char** argv) {
 
   fs::path src_dir = dst_dir / "src";
   fs::path hi_py = src_dir / "hardware_interface_py.cpp";
-  fs::path inc_hi_dir = src_dir / "hardware_interface";
+  fs::path src_hi_dir = src_dir / "hardware_interface";
 
-  fs::create_directories(src_dir);
+  fs::create_directories(src_hi_dir);
 
   for (const Header& header : headers)
-    write_named_hi_py_hpp(inc_hi_dir, header);
+    write_named_hi_py_hpp(src_hi_dir, header);
 
   write_hi_py_cpp(hi_py, headers);
 
