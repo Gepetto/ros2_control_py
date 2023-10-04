@@ -89,7 +89,7 @@ inline std::ostream& operator<<(std::ostream& os, const Var& var) {
 
 void write_named_hi_py_hpp(const fs::path& inc_hi_dir, const Header& header) {
   fs::path path = inc_hi_dir / (header.name + "_py.hpp");
-  fs::create_directory(path.parent_path());
+  fs::create_directories(path.parent_path());
   std::ofstream ofs{path, std::ios::out | std::ios::trunc};
   ASSERT(ofs, "Could not open " << path);
   ofs << R"(// pybind11
