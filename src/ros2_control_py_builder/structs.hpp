@@ -52,11 +52,15 @@ struct Cls {
 };
 
 struct Enum {
+  Enum(const std::string& name) : name{name} {};
+
   std::string name;
   std::vector<std::string> items;
 };
 
 struct Var {
+  Var(const std::string& name) : name{name} {};
+
   std::string name;
 };
 

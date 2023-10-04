@@ -2,7 +2,8 @@
 
 // STL
 #include <algorithm>
-#include <filesystem>
+// boost
+#include <boost/filesystem.hpp>
 // CppParser
 #include <cppast.h>
 #include <cppcompound-info-accessor.h>
@@ -15,7 +16,7 @@
 #include "structs.hpp"
 #include "utils.hpp"
 
-namespace sfs = std::filesystem;
+namespace fs = boost::filesystem;
 
 inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr) {
   cls.attrs.emplace_back(attr->name());
@@ -144,7 +145,7 @@ inline void parse_namespace(Header& header, CppWriter& writer,
   }
 }
 
-inline void parse_header(std::vector<Header>& headers, sfs::path path,
+inline void parse_header(std::vector<Header>& headers, fs::path path,
                          const std::string& name) {
   CppParser parser;
   parser.addIgnorableMacro("HARDWARE_INTERFACE_PUBLIC");

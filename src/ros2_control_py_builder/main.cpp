@@ -7,16 +7,16 @@ int main(int argc, char** argv) {
   ASSERT(argc == 3, "Invalid number of command line arguments, expected 2 got "
                         << argc - 1);
 
-  sfs::path hi_dir = argv[1];
-  sfs::path dst_dir = argv[2];
-  ASSERT(sfs::is_directory(hi_dir), hi_dir << " is not a valid directory");
-  ASSERT(sfs::is_directory(dst_dir), dst_dir << " is not a valid file");
+  fs::path hi_dir = argv[1];
+  fs::path dst_dir = argv[2];
+  ASSERT(fs::is_directory(hi_dir), hi_dir << " is not a valid directory");
+  ASSERT(fs::is_directory(dst_dir), dst_dir << " is not a valid file");
 
   std::vector<Header> headers;
 
-  for (auto entry : sfs::recursive_directory_iterator{hi_dir}) {
-    const sfs::path& path = entry.path();
-    if (!entry.is_regular_file() || path.extension() != ".hpp" ||
+  for (auto entry : fs::recursive_directory_iterator{hi_dir}) {
+    const fs::path& path = entry.path();
+    if (!fs::is_regular_file(entry) || path.extension() != ".hpp" ||
         path.filename() == "macros.hpp" ||
         path.filename() == "component_parser.hpp")
       continue;
@@ -25,13 +25,13 @@ int main(int argc, char** argv) {
     parse_header(headers, path, name);
   }
 
-  sfs::path src_dir = dst_dir / "src";
-  sfs::path hi_py = src_dir / "hardware_interface_py.cpp";
-  sfs::path inc_hi_dir = dst_dir / "include" / "hardware_interface";
-  sfs::path inc_hi_types_dir = inc_hi_dir / "types";
+  fs::path src_dir = dst_dir / "src" / "ros2_control_py";
+  fs::path hi_py = src_dir / "hardware_interface_py.cpp";
+  fs::path inc_hi_dir = src_dir / "hardware_interface";
+  fs::path inc_hi_types_dir = inc_hi_dir / "types";
 
-  sfs::create_directories(src_dir);
-  sfs::create_directories(inc_hi_types_dir);
+  fs::create_directories(src_dir);
+  fs::create_directories(inc_hi_types_dir);
 
   for (const Header& header : headers)
     write_named_hi_py_hpp(inc_hi_dir, header);
