@@ -28,10 +28,8 @@ int main(int argc, char** argv) {
   fs::path src_dir = dst_dir / "src" / "ros2_control_py";
   fs::path hi_py = src_dir / "hardware_interface_py.cpp";
   fs::path inc_hi_dir = src_dir / "hardware_interface";
-  fs::path inc_hi_types_dir = inc_hi_dir / "types";
 
   fs::create_directories(src_dir);
-  fs::create_directories(inc_hi_types_dir);
 
   for (const Header& header : headers)
     write_named_hi_py_hpp(inc_hi_dir, header);
