@@ -2,8 +2,10 @@
 
 // STL
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <string>
 // CppParser
@@ -43,11 +45,20 @@ inline std::string str_of_cpp(CppWriter& writer, const CppObj* cppObj);
 // Impl
 
 inline void remove_attributes(std::string& contents) {
+  // remove attributes aka [[...]]
   auto it = contents.begin();
   while (it != contents.end()) {
     it = std::search_n(it, contents.end(), 2, '[');
     auto end = std::search_n(it, contents.end(), 2, ']');
     if (end != contents.end()) it = contents.erase(it, end + 2);
+  }
+  // digit separators aka d'ddd'ddd
+  it = contents.begin();
+  while (it != contents.end()) {
+    it = std::adjacent_find(it, contents.end(), [](char a, char b) {
+      return std::isdigit(a) && b == '\'';
+    });
+    if (it != contents.end()) it = contents.erase(it + 1);
   }
 }
 
