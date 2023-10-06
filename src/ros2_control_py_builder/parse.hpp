@@ -122,6 +122,10 @@ inline void parse_var(Header& header, CppVarEPtr var) {
   header.vars.emplace_back(var->name());
 }
 
+inline void parse_func(Header& header, CppFunctionEPtr func) {
+  header.funcs.emplace_back(func->name_);
+}
+
 inline void parse_namespace(Header& header, CppWriter& writer,
                             CppConstCompoundEPtr ns, std::string name) {
   header.namespaces.emplace_back(name);
@@ -129,6 +133,11 @@ inline void parse_namespace(Header& header, CppWriter& writer,
     CppVarEPtr var = obj;
     if (var) {
       parse_var(header, var);
+      continue;
+    }
+    CppFunctionEPtr func = obj;
+    if (func) {
+      parse_func(header, func);
       continue;
     }
     CppEnumEPtr enu = obj;
@@ -145,20 +154,23 @@ inline void parse_namespace(Header& header, CppWriter& writer,
   }
 }
 
-inline void parse_header(std::vector<Header>& headers, fs::path path,
-                         const std::string& name) {
+inline void parse_header(Module& mod, fs::path path, const std::string& name) {
   CppParser parser;
-  parser.addIgnorableMacro("HARDWARE_INTERFACE_PUBLIC");
+  std::string const upper_name = to_upper(mod.name);
+  parser.addIgnorableMacro(upper_name + "_PUBLIC");
+  parser.addIgnorableMacro(upper_name + "_LOCAL");
+  parser.addIgnorableMacro(upper_name + "_EXPORT");
+  parser.addIgnorableMacro(upper_name + "_IMPORT");
   CppWriter writer;
 
-  headers.emplace_back(name.substr(0, name.rfind('.')));
+  mod.headers.emplace_back(name.substr(0, name.rfind('.')));
 
   const CppCompoundPtr ast = parse_file(parser, path.string());
   ASSERT(ast, "Could not parse " << path);
   // std::cerr << "Parsed " << path << std::endl;
   for (const CppObjPtr& obj_ns : ast->members()) {
     CppConstCompoundEPtr ns = obj_ns;
-    if (!ns || !isNamespace(ns) || ns->name() != "hardware_interface") continue;
-    parse_namespace(headers.back(), writer, ns, ns->name());
+    if (!ns || !isNamespace(ns) || ns->name() != mod.name) continue;
+    parse_namespace(mod.headers.back(), writer, ns, ns->name());
   }
 }

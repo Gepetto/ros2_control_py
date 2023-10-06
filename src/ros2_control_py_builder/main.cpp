@@ -4,37 +4,42 @@
 #include "write.hpp"
 
 int main(int argc, char** argv) {
-  ASSERT(argc == 3, "Invalid number of command line arguments, expected 2 got "
-                        << argc - 1);
+  ASSERT(argc > 3,
+         "Invalid number of command line arguments, expected at least 3 got "
+             << argc - 1);
 
-  fs::path hi_dir = argv[1];
-  fs::path dst_dir = argv[2];
-  ASSERT(fs::is_directory(hi_dir), hi_dir << " is not a valid directory");
-  ASSERT(fs::is_directory(dst_dir), dst_dir << " is not a valid file");
+  fs::path dst_dir = argv[1];
+  fs::path inc_dir = argv[2];
+  fs::path src_dir = dst_dir / "src";
+  fs::create_directories(src_dir);
 
-  std::vector<Header> headers;
+  ASSERT_DIR(src_dir);
+  ASSERT_DIR(inc_dir);
 
-  for (auto entry : fs::recursive_directory_iterator{hi_dir}) {
-    const fs::path& path = entry.path();
-    if (!fs::is_regular_file(entry) || path.extension() != ".hpp" ||
-        path.filename() == "macros.hpp" ||
-        path.filename() == "component_parser.hpp")
-      continue;
+  std::vector<Module> modules;
+  for (int i = 3; i < argc; ++i)
+    modules.emplace_back(inc_dir, src_dir, argv[i]);
 
-    std::string name = path.lexically_relative(hi_dir).string();
-    parse_header(headers, path, name);
+  for (const Module& mod : modules) {
+    fs::create_directories(mod.src_dir);
+    ASSERT_DIR(mod.src_dir);
+    ASSERT_DIR(mod.inc_dir);
   }
 
-  fs::path src_dir = dst_dir / "src";
-  fs::path hi_py = src_dir / "hardware_interface_py.cpp";
-  fs::path src_hi_dir = src_dir / "hardware_interface";
+  for (Module& mod : modules) {
+    for (const fs::directory_entry& entry :
+         fs::recursive_directory_iterator{mod.inc_dir}) {
+      const fs::path& path = entry.path();
+      if (!fs::is_regular_file(entry) || path.extension() != ".hpp" ||
+          path.filename() == "macros.hpp")
+        continue;
 
-  fs::create_directories(src_hi_dir);
+      std::string name = path.lexically_relative(mod.inc_dir).string();
+      parse_header(mod, path, name);
+    }
+  }
 
-  for (const Header& header : headers)
-    write_named_hi_py_hpp(src_hi_dir, header);
-
-  write_hi_py_cpp(hi_py, headers);
+  for (const Module& mod : modules) write_module(mod);
 
   return 0;
 }

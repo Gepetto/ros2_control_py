@@ -19,6 +19,9 @@
     std::cerr << __VA_ARGS__ << std::endl; \
     std::exit(EXIT_FAILURE);               \
   } while (false)
+/// @brief if not fs::is_directori((Dir)) fails
+#define ASSERT_DIR(Dir) \
+  ASSERT(fs::is_directory((Dir)), (Dir) << " is not a valid directory")
 
 /// @brief wrapper over a `const T&` and a `const U&`, display all elements of a
 /// `T` with a 'U' as a separator
@@ -41,6 +44,8 @@ template <typename T, typename U>
 std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep);
 /// @brief wrapper to get a string repr of a CppObj
 inline std::string str_of_cpp(CppWriter& writer, const CppObj* cppObj);
+/// @brief std::string to upper (not in place)
+inline std::string to_upper(std::string str);
 
 // Impl
 
@@ -52,13 +57,16 @@ inline void remove_attributes(std::string& contents) {
     auto end = std::search_n(it, contents.end(), 2, ']');
     if (end != contents.end()) it = contents.erase(it, end + 2);
   }
-  // digit separators aka d'ddd'ddd
+  // digit separators aka d'ddd'ddd but not char digits aka 'd'
   it = contents.begin();
   while (it != contents.end()) {
     it = std::adjacent_find(it, contents.end(), [](char a, char b) {
       return std::isdigit(a) && b == '\'';
     });
-    if (it != contents.end()) it = contents.erase(it + 1);
+    if (it == contents.end()) continue;
+    it += 2;
+    if (it == contents.end() || !std::isdigit(*it)) continue;
+    it = contents.erase(it - 1);
   }
 }
 
@@ -118,4 +126,10 @@ inline std::string str_of_cpp(CppWriter& writer, const CppObj* cppObj) {
   std::ostringstream oss;
   writer.emit(cppObj, oss);
   return std::move(oss).str();
+}
+
+inline std::string to_upper(std::string str) {
+  std::transform(str.cbegin(), str.cend(), str.begin(),
+                 [](char c) { return std::toupper(c); });
+  return str;
 }
