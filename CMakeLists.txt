@@ -16,13 +16,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
 find_package(rclpy REQUIRED)
-#find_package(controller_interface REQUIRED)
-#find_package(controller_manager REQUIRED)
-#find_package(controller_manager_msgs REQUIRED)
-find_package(hardware_interface REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
@@ -30,7 +24,12 @@ find_package(pybind11 REQUIRED)
 add_subdirectory(cppparser)
 
 set(ros2_py_src_dir ${CMAKE_CURRENT_BINARY_DIR}/src)
-set(ros2_py_modules hardware_interface)
+
+set(ros2_py_modules
+  hardware_interface
+  controller_interface
+)
+
 set(ros2_py_src ${ros2_py_modules})
 list(TRANSFORM ros2_py_src PREPEND ${ros2_py_src_dir}/)
 list(TRANSFORM ros2_py_src APPEND _py.cpp)
@@ -51,16 +50,15 @@ add_custom_command(
 ament_python_install_package(ros2_control_py)
 
 foreach(module ${ros2_py_modules})
-  pybind11_add_module(${module}
-    ${ros2_py_src}
+  find_package(${module} REQUIRED)
+  pybind11_add_module(${module}_py
+    ${ros2_py_src_dir}/${module}_py.cpp
   )
-  ament_target_dependencies(${module} PUBLIC
+  ament_target_dependencies(${module}_py PUBLIC
     rclpy
-    rclcpp
-    rclcpp_lifecycle
-    hardware_interface
+    ${module}
   )
-  install(TARGETS ${module}
+  install(TARGETS ${module}_py
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
   )
 endforeach()

@@ -1,7 +1,5 @@
 #pragma once
 
-// STL
-#include <algorithm>
 // boost
 #include <boost/filesystem.hpp>
 // CppParser
@@ -19,7 +17,14 @@
 namespace fs = boost::filesystem;
 
 inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr) {
-  cls.attrs.emplace_back(attr->name());
+  if (attr->varType()->typeModifier().refType_ != CppRefType::kNoRef) {
+    std::cerr << "skipped ref attr " << cls.name << "::" << attr->name()
+              << std::endl;
+    return;
+  }
+  if (!isPublic(attr)) return;
+  cls.attrs.emplace_back(std::make_shared<Attr>(attr->name(), isPublic(attr)));
+  if (!cls.attrs.back()->is_public) cls.has_protected = true;
 }
 
 inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor,
@@ -45,37 +50,48 @@ inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor,
 
 inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb,
                              CppWriter& writer) {
-  {
-    if (isPureVirtual(memb.get())) {
-      std::vector<std::string> args;
-      std::vector<std::string> args_names;
-      const CppParamVector* params = memb->params();
-      if (params) {
-        for (const CppObjPtr& param : *params) {
-          CppConstVarEPtr var = param;
-          ASSERT(var, "that was not a var");
-          std::string arg = str_of_cpp(writer, var);
-          arg.pop_back();
-          arg.pop_back();
-          args.emplace_back(std::move(arg));
-          args_names.emplace_back(var->name());
-        }
-      }
-      cls.vmembs.emplace_back(memb->name_,
-                              str_of_cpp(writer, memb->retType_.get()),
-                              cls.name, std::move(args), std::move(args_names));
-    } else
-      cls.membs.emplace_back(memb->name_);
+  if (memb->templateParamList()) {
+    std::cerr << cls.name << ": skipped template member " << memb->name_
+              << std::endl;
+    return;
   }
+  std::string ret_type = str_of_cpp(writer, memb->retType_.get());
+  std::vector<std::string> args;
+  std::vector<std::string> args_type;
+  std::vector<std::string> args_names;
+  const CppParamVector* params = memb->params();
+  if (params) {
+    size_t i = 0;
+    for (const CppObjPtr& param : *params) {
+      CppConstVarEPtr var = param;
+      ASSERT(var, "that was not a var");
+      /*if (var->varType()->typeModifier().refType_ == CppRefType::kByRef)
+        std::cerr << "warning: arg by ref in " << cls.name
+                  << "::" << memb->name_ << std::endl;*/
+      if (var->varType()->typeModifier().refType_ == CppRefType::kRValRef) {
+        std::cerr << "warning: skipped " << cls.name << "::" << memb->name_
+                  << " because of rvalue argument" << std::endl;
+        return;
+      }
+      std::string type = str_of_cpp(writer, var->varType());
+      std::string name =
+          !var->name().empty() ? var->name() : "arg" + std::to_string(i++);
+      args.emplace_back(type + " " + name);
+      args_type.emplace_back(std::move(type));
+      args_names.emplace_back(std::move(name));
+    }
+  }
+  cls.membs.emplace_back(std::make_shared<Memb>(
+      memb->name_, cls.name, ret_type, std::move(args), std::move(args_type),
+      std::move(args_names), isConst(memb.get()), isVirtual(memb.get()),
+      isPureVirtual(memb.get()), isFinal(memb.get()), isPublic(memb.get())));
+  if (cls.membs.back()->is_virtual && !cls.membs.back()->is_final)
+    cls.has_virtual = true;
+  if (cls.membs.back()->is_pure) cls.has_pure = true;
+  if (!cls.membs.back()->is_public) cls.has_protected = true;
 }
 
-inline void parse_class_using(Cls& cls, Header& header) {
-  auto it = std::find_if(
-      header.classes.begin(), header.classes.end(),
-      [cls](const Cls& other) { return other.name == cls.mother; });
-  ASSERT(it != header.classes.end(), "Could not find parent class");
-  cls.ctors.insert(cls.ctors.end(), it->ctors.begin(), it->ctors.end());
-}
+inline void parse_class_using(Cls& cls) { cls.using_mother_ctor = true; }
 
 inline void parse_class(Header& header, CppWriter& writer,
                         CppConstCompoundEPtr cls) {
@@ -84,29 +100,32 @@ inline void parse_class(Header& header, CppWriter& writer,
          "Too many parents for " << cls->name());
   bool has_mother = parents && !parents->empty() &&
                     parents->front().inhType == CppAccessType::kPublic;
-  Cls& cls_rep = header.classes.emplace_back(
-      cls->name(), has_mother ? parents->front().baseName : "");
+  auto cls_rep = std::make_shared<Cls>(
+      header, cls->name(), has_mother ? parents->front().baseName : "");
+  header.classes.emplace_back(cls_rep);
   for (const CppObjPtr& obj_memb : cls->members()) {
-    if (!isPublic(obj_memb)) continue;
+    if (!isPublic(obj_memb) && !isProtected(obj_memb)) continue;
     CppConstVarEPtr attr = obj_memb;
     if (attr) {
-      parse_class_attr(cls_rep, attr);
-      continue;
-    }
-    CppConstructorEPtr ctor = obj_memb;
-    if (ctor && !ctor->isCopyConstructor() && !ctor->isMoveConstructor()) {
-      parse_class_ctor(cls_rep, ctor, writer);
+      parse_class_attr(*cls_rep, attr);
       continue;
     }
     CppConstFunctionEPtr memb = obj_memb;
     if (memb && memb->name_.find("operator") == std::string::npos &&
         memb->name_ != "get_full_name" && memb->name_ != "import_component") {
-      parse_class_memb(cls_rep, memb, writer);
+      parse_class_memb(*cls_rep, memb, writer);
+      continue;
+    }
+    if (!isPublic(obj_memb)) continue;
+    CppConstructorEPtr ctor = obj_memb;
+    if (ctor && !ctor->isCopyConstructor() && !ctor->isMoveConstructor()) {
+      parse_class_ctor(*cls_rep, ctor, writer);
       continue;
     }
     CppConstUsingDeclEPtr use = obj_memb;
-    if (use && use->name_ == cls_rep.mother + "::" + cls_rep.mother) {
-      parse_class_using(cls_rep, header);
+    if (use && use->name_ == cls_rep->mother_just_name +
+                                 "::" + cls_rep->mother_just_name) {
+      parse_class_using(*cls_rep);
       continue;
     }
   }
@@ -119,11 +138,42 @@ inline void parse_enum(Header& header, CppEnumEPtr enu) {
 }
 
 inline void parse_var(Header& header, CppVarEPtr var) {
+  if (var->templateParamList()) {
+    std::cerr << header.name << ": skipped template var " << var->name()
+              << std::endl;
+    return;
+  }
   header.vars.emplace_back(var->name());
 }
 
-inline void parse_func(Header& header, CppFunctionEPtr func) {
-  header.funcs.emplace_back(func->name_);
+inline void parse_func(Header& header, CppWriter& writer,
+                       CppFunctionEPtr func) {
+  if (func->templateParamList()) {
+    std::cerr << header.name << ": skipped template function " << func->name_
+              << std::endl;
+    return;
+  }
+  std::string ret_type = str_of_cpp(writer, func->retType_.get());
+  std::vector<std::string> args;
+  std::vector<std::string> args_type;
+  std::vector<std::string> args_names;
+  const CppParamVector* params = func->params();
+  if (params) {
+    size_t i = 0;
+    for (const CppObjPtr& param : *params) {
+      CppConstVarEPtr var = param;
+      ASSERT(var, "that was not a var");
+      std::string type = str_of_cpp(writer, var->varType());
+      std::string name =
+          !var->name().empty() ? var->name() : "arg" + std::to_string(i++);
+      args.emplace_back(type + " " + name);
+      args_type.emplace_back(std::move(type));
+      args_names.emplace_back(std::move(name));
+    }
+  }
+  header.funcs.emplace_back(
+      std::make_shared<Func>(func->name_, ret_type, std::move(args),
+                             std::move(args_type), std::move(args_names)));
 }
 
 inline void parse_namespace(Header& header, CppWriter& writer,
@@ -137,7 +187,7 @@ inline void parse_namespace(Header& header, CppWriter& writer,
     }
     CppFunctionEPtr func = obj;
     if (func) {
-      parse_func(header, func);
+      parse_func(header, writer, func);
       continue;
     }
     CppEnumEPtr enu = obj;
@@ -163,7 +213,8 @@ inline void parse_header(Module& mod, fs::path path, const std::string& name) {
   parser.addIgnorableMacro(upper_name + "_IMPORT");
   CppWriter writer;
 
-  mod.headers.emplace_back(name.substr(0, name.rfind('.')));
+  mod.headers.emplace_back(
+      std::make_shared<Header>(name.substr(0, name.rfind('.'))));
 
   const CppCompoundPtr ast = parse_file(parser, path.string());
   ASSERT(ast, "Could not parse " << path);
@@ -171,6 +222,6 @@ inline void parse_header(Module& mod, fs::path path, const std::string& name) {
   for (const CppObjPtr& obj_ns : ast->members()) {
     CppConstCompoundEPtr ns = obj_ns;
     if (!ns || !isNamespace(ns) || ns->name() != mod.name) continue;
-    parse_namespace(mod.headers.back(), writer, ns, ns->name());
+    parse_namespace(*mod.headers.back(), writer, ns, ns->name());
   }
 }

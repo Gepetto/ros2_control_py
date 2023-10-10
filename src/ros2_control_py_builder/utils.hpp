@@ -3,11 +3,14 @@
 // STL
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
-#include <regex>
+#include <iterator>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 // CppParser
 #include <cppparser.h>
 #include <cppwriter.h>
@@ -46,6 +49,8 @@ std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep);
 inline std::string str_of_cpp(CppWriter& writer, const CppObj* cppObj);
 /// @brief std::string to upper (not in place)
 inline std::string to_upper(std::string str);
+inline std::string just_name(const std::string& name);
+inline std::string just_name(std::string&& name);
 
 // Impl
 
@@ -132,4 +137,143 @@ inline std::string to_upper(std::string str) {
   std::transform(str.cbegin(), str.cend(), str.begin(),
                  [](char c) { return std::toupper(c); });
   return str;
+}
+
+inline std::string just_name(const std::string& name) {
+  return just_name(std::string{name});
+}
+
+inline std::string just_name(std::string&& name) {
+  auto it = std::search_n(name.crbegin(), name.crend(), 2, ':');
+  if (it != name.crend()) name.erase(name.cbegin(), it.base());
+  return std::string{std::move(name)};
+}
+
+template <typename T>
+class PtrIt {
+ public:
+  explicit PtrIt(T it) : it_{it} {}
+
+  decltype(std::declval<T>()->operator*()) operator*() const {
+    return it_->operator*();
+  }
+  auto operator->() const { return std::addressof(this->operator*()); }
+
+  PtrIt operator++() { return PtrIt{++it_}; }
+  PtrIt operator++(int) { return PtrIt{it_++}; }
+
+  PtrIt operator--() { return PtrIt{--it_}; }
+  PtrIt operator--(int) { return PtrIt{it_--}; }
+
+  PtrIt operator+(std::ptrdiff_t i) const { return PtrIt{it_} += i; }
+  PtrIt& operator+=(std::ptrdiff_t i) {
+    it_ += i;
+    return *this;
+  }
+
+  PtrIt operator-(std::ptrdiff_t i) const { return PtrIt{it_} -= i; }
+  PtrIt& operator-=(std::ptrdiff_t i) {
+    it_ -= i;
+    return *this;
+  }
+
+  bool operator==(const PtrIt& other) const { return it_ == other.it_; }
+  bool operator!=(const PtrIt& other) const { return !(*this == other); }
+
+  T base() const { return it_; }
+  void from_base(T it) { it_ = it; }
+
+ private:
+  T it_;
+};
+
+template <typename T>
+class CPtrIterable {
+ public:
+  explicit CPtrIterable(const T& iterable) noexcept : iterable_{iterable} {}
+
+  auto begin() const { return PtrIt{std::begin(iterable_)}; }
+  auto end() const { return PtrIt{std::end(iterable_)}; }
+
+  auto cbegin() const { return PtrIt{std::cbegin(iterable_)}; }
+  auto cend() const { return PtrIt{std::cend(iterable_)}; }
+
+  auto rbegin() const { return PtrIt{std::rbegin(iterable_)}; }
+  auto rend() const { return PtrIt{std::rend(iterable_)}; }
+
+  auto crbegin() const { return PtrIt{std::crbegin(iterable_)}; }
+  auto crend() const { return PtrIt{std::crend(iterable_)}; }
+
+ private:
+  const T& iterable_;
+};
+
+template <typename T>
+class PtrIterable {
+ public:
+  explicit PtrIterable(T& iterable) noexcept : iterable_{iterable} {}
+
+  auto begin() { return PtrIt{std::begin(iterable_)}; }
+  auto end() { return PtrIt{std::end(iterable_)}; }
+
+  auto begin() const { return PtrIt{std::begin(iterable_)}; }
+  auto end() const { return PtrIt{std::end(iterable_)}; }
+
+  auto cbegin() const { return PtrIt{std::cbegin(iterable_)}; }
+  auto cend() const { return PtrIt{std::cend(iterable_)}; }
+
+  auto rbegin() { return PtrIt{std::rbegin(iterable_)}; }
+  auto rend() { return PtrIt{std::rend(iterable_)}; }
+
+  auto rbegin() const { return PtrIt{std::rbegin(iterable_)}; }
+  auto rend() const { return PtrIt{std::rend(iterable_)}; }
+
+  auto crbegin() const { return PtrIt{std::crbegin(iterable_)}; }
+  auto crend() const { return PtrIt{std::crend(iterable_)}; }
+
+ private:
+  T& iterable_;
+};
+
+template <typename T>
+class OwningPtrIterable {
+ public:
+  explicit OwningPtrIterable(T&& iterable) noexcept
+      : iterable_{std::move(iterable)} {}
+
+  auto begin() { return PtrIt{std::begin(iterable_)}; }
+  auto end() { return PtrIt{std::end(iterable_)}; }
+
+  auto begin() const { return PtrIt{std::begin(iterable_)}; }
+  auto end() const { return PtrIt{std::end(iterable_)}; }
+
+  auto cbegin() const { return PtrIt{std::cbegin(iterable_)}; }
+  auto cend() const { return PtrIt{std::cend(iterable_)}; }
+
+  auto rbegin() { return PtrIt{std::rbegin(iterable_)}; }
+  auto rend() { return PtrIt{std::rend(iterable_)}; }
+
+  auto rbegin() const { return PtrIt{std::rbegin(iterable_)}; }
+  auto rend() const { return PtrIt{std::rend(iterable_)}; }
+
+  auto crbegin() const { return PtrIt{std::crbegin(iterable_)}; }
+  auto crend() const { return PtrIt{std::crend(iterable_)}; }
+
+ private:
+  T iterable_;
+};
+
+template <typename T>
+auto ptr_iter(T&& iterable) {
+  return OwningPtrIterable{std::move(iterable)};
+}
+
+template <typename T>
+auto ptr_iter(T& iterable) {
+  return PtrIterable{iterable};
+}
+
+template <typename T>
+auto ptr_iter(const T& iterable) {
+  return CPtrIterable{iterable};
 }
