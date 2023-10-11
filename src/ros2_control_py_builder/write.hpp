@@ -1,7 +1,6 @@
 #pragma once
 
 // STL
-#include <boost/filesystem/operations.hpp>
 #include <ostream>
 // boost
 #include <boost/filesystem.hpp>
@@ -15,8 +14,6 @@ namespace fs = boost::filesystem;
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls);
 /// @brief output a `Memb` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const Memb& memb);
-/// @brief output a `Memb` to write an hpp
-inline std::ostream& operator<<(std::ostream& os, const Memb& vmemb);
 /// @brief output a `Enum` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const Enum& enu);
 /// @brief output a `Var` to write an hpp
