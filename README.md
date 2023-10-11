@@ -26,6 +26,6 @@ colcon build --packages-select ros2_control_py
 To create an actuator
 
 ```python
-from ros2_control_py import Actuator
-actuator = Actuator()
+from ros2_control_py import hardware_interface
+actuator = hardware_interface.Actuator()
 ```
