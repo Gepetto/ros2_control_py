@@ -1,4 +1,21 @@
 from ros2_control_py.hardware_interface import FloatRef
+from math import nan, inf, isnan
+
+
+def cpp_div(a, b):
+    if b != 0:
+        return a / b
+    if a == 0:
+        return nan
+    if a < 0:
+        return -inf
+    if a > 0:
+        return inf
+    return nan
+
+
+def assert_same_float(a, b):
+    assert a == b or (isnan(a) and isnan(b))
 
 
 def assert_cmp(a, b, ta, tb):
@@ -22,11 +39,9 @@ def assert_arith(a, b, ta, tb):
     r = fa * fb
     assert type(r) is float
     assert (a * b) == r
-    if b == 0:
-        return
     r = fa / fb
     assert type(r) is float
-    assert (a / b) == r
+    assert_same_float(cpp_div(a, b), r)
 
 
 def assert_self_arith(a, b, tb):
@@ -43,12 +58,10 @@ def assert_self_arith(a, b, tb):
     r *= fb
     assert type(r) is FloatRef
     assert (a * b) == r.get_value()
-    if b == 0:
-        return
     r = FloatRef(a)
     r /= fb
     assert type(r) is FloatRef
-    assert (a / b) == r.get_value()
+    assert_same_float(cpp_div(a, b), r.get_value())
 
 
 def assert_cmpi(a, b, ta, tb):
