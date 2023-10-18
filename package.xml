@@ -28,7 +28,6 @@
   <depend>controller_manager_msgs</depend>
   <depend>hardware_interface</depend>
   <depend>joint_limits</depend>
-  <depend>joint_limits_interface</depend>
   <depend>transmission_interface</depend>
 
   <test_depend>ament_cmake_pytest</test_depend>

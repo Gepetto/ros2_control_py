@@ -6,9 +6,8 @@ from ros2_control_py.hardware_interface import (
 )
 from ros2_control_py import ros2_control_test_assets
 import pytest
-from locale import setlocale
 from math import isclose, pi
-from tests.utils import ROS_DISTRO, hardware_plugin_name
+from tests.utils import hardware_plugin_name
 
 
 def test_empty_string_throws_error():
@@ -520,33 +519,6 @@ def test_successfully_parse_valid_urdf_actuator_only():
     assert actuator.offset == 0.0
     assert len(transmission.parameters) == 1
     assert transmission.parameters["additional_special_parameter"] == "1337"
-
-
-def test_successfully_parse_locale_independent_double():
-    if ROS_DISTRO == "humble":
-        return
-    # Set to locale with comma-separated decimals
-    setlocale(locale.LC_NUMERIC, ("fr_FR", "UTF-8"))
-
-    urdf_to_test = (
-        ros2_control_test_assets.urdf_head
-        + ros2_control_test_assets.valid_urdf_ros2_control_actuator_only
-        + ros2_control_test_assets.urdf_tail
-    )
-
-    control_hardware = parse_control_resources_from_urdf(urdf_to_test)
-    assert len(control_hardware) == 1
-    hardware_info = control_hardware[0]
-
-    assert hardware_info.hardware_parameters["example_param_write_for_sec"] == "1.13"
-
-    assert len(hardware_info.transmissions) == 1
-    transmission = hardware_info.transmissions[0]
-    assert len(transmission.joints) == 1
-    joint = transmission.joints[0]
-
-    # Test that we still parse doubles using dot notation
-    assert joint.mechanical_reduction == 325.949
 
 
 def test_successfully_parse_valid_urdf_system_robot_with_gpio():
