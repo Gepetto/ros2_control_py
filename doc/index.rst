@@ -40,7 +40,7 @@ It's purpose is to be used with CommandInterface/CommandInterface.
 Warning:
 	| Although you can use assignment operators like +=,
 	| you **cannot** assign to a FloatRef.
-	| To do that see :ref:`_FloatRefProp`
+	| To do that see :ref:`_FloatRefProp` of use set_value.
 
 Usage:
 
