@@ -15,21 +15,27 @@ void init_overloads(Module& mod);
 void init_header_order(Module& mod);
 
 int main(int argc, char** argv) {
-  ASSERT(argc > 3,
-         "Invalid number of command line arguments, expected at least 3 got "
+  ASSERT(argc > 4,
+         "Invalid number of command line arguments, expected at least 4 got "
              << argc - 1);
 
-  fs::path dst_dir = argv[1];
-  fs::path inc_dir = argv[2];
-  fs::path src_dir = dst_dir / "src";
+  const fs::path dst_dir = argv[1];
+  const fs::path inc_dir = argv[2];
+  const std::string ros_distro = argv[3];
+  const fs::path src_dir = dst_dir / "src";
   fs::create_directories(src_dir);
 
   ASSERT_DIR(src_dir);
   ASSERT_DIR(inc_dir);
+  ASSERT(ros_distro == "humble" || ros_distro == "rolling",
+         "Unsupported ros distro " << ros_distro);
+
+  const bool long_includes = ros_distro != "humble";
 
   std::vector<Module> modules;
-  for (int i = 3; i < argc; ++i)
-    modules.emplace_back(inc_dir, src_dir, argv[i]);
+  for (int i = 4; i < argc; ++i)
+    modules.emplace_back(long_includes ? inc_dir / argv[i] : inc_dir, src_dir,
+                         argv[i]);
 
   for (const Module& mod : modules) {
     fs::create_directories(mod.src_dir);
@@ -91,8 +97,8 @@ void init_py_utils(Module& mod) {
   auto lni =
       std::make_shared<Cls>(*mod.py_utils, "rclcpp_lifecycle::node_interfaces",
                             "LifecycleNodeInterface", "", nullptr);
-  auto names = {"on_configure", "on_cleanup",    "on_shutdown",
-                "on_activate",  "on_deactivate", "on_error"};
+  const auto names = {"on_configure", "on_cleanup",    "on_shutdown",
+                      "on_activate",  "on_deactivate", "on_error"};
   for (const auto& name : names)
     lni->membs.emplace_back(
         new Memb{name,

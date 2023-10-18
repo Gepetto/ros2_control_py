@@ -45,7 +45,7 @@ target_link_libraries(${PROJECT_NAME}_builder
 )
 add_custom_command(
   OUTPUT ${_ros2_py_src}
-  COMMAND ${PROJECT_NAME}_builder "${CMAKE_CURRENT_BINARY_DIR}" "/opt/ros/$ENV{ROS_DISTRO}/include" ${_ros2_py_modules}
+  COMMAND ${PROJECT_NAME}_builder "${CMAKE_CURRENT_BINARY_DIR}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
   DEPENDS ${PROJECT_NAME}_builder
 )
 
