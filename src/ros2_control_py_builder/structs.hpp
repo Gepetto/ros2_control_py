@@ -3,6 +3,7 @@
 // STL
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 // boost
 #include <boost/filesystem.hpp>
@@ -113,9 +114,11 @@ struct Memb : public Func {
 struct Header;
 
 struct Cls {
-  Cls(const Header& header, const std::string& name, std::string mother_name,
+  Cls(Header& header, const std::string& ns, const std::string& name,
+      const std::string& mother_name,
       std::shared_ptr<const Cls> mother = nullptr)
       : header{header},
+        complete_name{ns + "::" + name},
         name{name},
         tramp_name("Py" + name),
         pub_name("Pub" + name),
@@ -186,7 +189,8 @@ struct Cls {
     return found;
   }
 
-  const Header& header;
+  Header& header;
+  const std::string complete_name;
   const std::string name;
   const std::string tramp_name;
   const std::string pub_name;
@@ -201,6 +205,7 @@ struct Cls {
   bool has_virtual{false};
   bool has_pure{false};
   bool has_protected{false};
+  bool is_outsider{false};
 };
 
 struct Enum {
@@ -241,12 +246,15 @@ struct Header {
 
   const std::string name;
   const std::string proper_name;
-  std::vector<std::string> namespaces{};
+  std::unordered_set<std::string> namespaces{};
   std::vector<std::shared_ptr<Cls>> classes{};
   std::vector<Enum> enums{};
   std::vector<Var> vars{};
   std::vector<std::shared_ptr<Func>> funcs{};
-  std::vector<std::string> required;
+  std::vector<std::string> required{};
+  std::unordered_set<
+      std::tuple<std::string, std::string, std::string, std::string>>
+      stl_bind{};
 };
 
 struct Module {
@@ -254,11 +262,13 @@ struct Module {
       : inc_dir{inc_dir / name},
         src_dir{src_dir / name},
         src{src_dir / (name + "_py.cpp")},
-        name{name} {}
+        name{name},
+        py_utils{new Header{"py_utils"}} {}
 
   const fs::path inc_dir;
   const fs::path src_dir;
   const fs::path src;
   std::string name;
   std::vector<std::shared_ptr<Header>> headers{};
+  std::shared_ptr<Header> py_utils;
 };

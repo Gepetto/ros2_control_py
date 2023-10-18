@@ -4,7 +4,7 @@
 
 ## Install
 
-Assuming that your [ros2_control](https://github.com/ros-controls/ros2_control) workspace is ìn the directory `~/ros2_control_py_ws`:
+Assuming that your [ros2_control](https://github.com/ros-controls/ros2_control) workspace is in the directory `~/ros2_control_py_ws`:
 
 ```sh
 mkdir -p ~/ros2_control_py_ws/src
@@ -18,14 +18,17 @@ rosdep install --from-paths src -y --ignore-src
 
 ```sh
 cd ~/ros2_control_py_ws
-colcon build --packages-select ros2_control_py
+colcon build
 ```
 
 ## Testing
 
-To create an actuator
-
-```python
-from ros2_control_py import hardware_interface
-actuator = hardware_interface.Actuator()
+```sh
+cd ~/ros2_control_py_ws
+colcon build
+colcon test
 ```
+
+## Usage
+
+See [doc](doc/index.rst) and [tests](tests/).

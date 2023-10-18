@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 // CppParser
 #include <cppparser.h>
 #include <cppwriter.h>
@@ -56,22 +57,46 @@ inline std::string just_name(std::string&& name);
 
 inline void remove_attributes(std::string& contents) {
   // remove attributes aka [[...]]
-  auto it = contents.begin();
-  while (it != contents.end()) {
-    it = std::search_n(it, contents.end(), 2, '[');
-    auto end = std::search_n(it, contents.end(), 2, ']');
-    if (end != contents.end()) it = contents.erase(it, end + 2);
+  auto it = contents.cbegin();
+  while (it != contents.cend()) {
+    it = std::search_n(it, contents.cend(), 2, '[');
+    auto end = std::search_n(it, contents.cend(), 2, ']');
+    if (end != contents.cend()) it = contents.erase(it, end + 2);
   }
-  // digit separators aka d'ddd'ddd but not char digits aka 'd'
-  it = contents.begin();
-  while (it != contents.end()) {
-    it = std::adjacent_find(it, contents.end(), [](char a, char b) {
+  // remove digit separators aka d'ddd'ddd but not char digits aka 'd'
+  it = contents.cbegin();
+  while (it != contents.cend()) {
+    it = std::adjacent_find(it, contents.cend(), [](char a, char b) {
       return std::isdigit(a) && b == '\'';
     });
-    if (it == contents.end()) continue;
+    if (it == contents.cend()) continue;
     it += 2;
-    if (it == contents.end() || !std::isdigit(*it)) continue;
+    if (it == contents.cend() || !std::isdigit(*it)) continue;
     it = contents.erase(it - 1);
+  }
+  // remove raw strings aka R"()"
+  auto mit = contents.begin();
+  while (mit != contents.end()) {
+    mit = std::adjacent_find(mit, contents.end(), [](char a, char b) {
+      return a == 'R' && b == '"';
+    });
+    if (mit == contents.end()) continue;
+    mit += 2;
+    if (mit == contents.end()) continue;
+    auto name_end = std::find(mit, contents.end(), '(');
+    std::string name = std::string{mit, name_end};
+    auto valid_dchar = [](char c) {
+      return (!std::isalnum(c) && !std::ispunct(c)) || (c == ')' || c == '\\');
+    };
+    if (name.size() > 16 ||
+        std::find_if(name.cbegin(), name.cend(), valid_dchar) != name.cend())
+      continue;
+    std::size_t end =
+        contents.find(")" + name + "\"", name_end - contents.cbegin());
+    if (end == std::string::npos) continue;
+    *(mit - 2) = '"';  // replpace R with "
+    mit = contents.erase(
+        mit - 1, contents.cbegin() + end + name.size() + 1);  // R|"name()name|"
   }
 }
 
@@ -127,16 +152,47 @@ std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep) {
   return os;
 }
 
-inline std::string str_of_cpp(CppWriter& writer, const CppObj* cppObj) {
+inline std::string str_of_cpp(const CppObj* cppObj) {
   std::ostringstream oss;
-  writer.emit(cppObj, oss);
-  return std::move(oss).str();
+  CppWriter{}.emit(cppObj, oss);
+  std::string str = std::move(oss).str();
+  if (!str.empty() && str.back() == '*') {
+    std::string type = str.substr(0, str.size() - 1);
+    if (type == "double") return "Ref<" + type + ">";
+  }
+  return str;
 }
 
 inline std::string to_upper(std::string str) {
   std::transform(str.cbegin(), str.cend(), str.begin(),
                  [](char c) { return std::toupper(c); });
   return str;
+}
+
+inline std::string to_pascal_case(std::string_view str) {
+  std::string r;
+  r.resize(str.size());
+  auto rit = r.begin();
+  for (auto it = str.cbegin(); it != str.cend(); ++it) {
+    auto end = std::find(it, str.cend(), '_');
+    if (it == end) continue;
+    *rit++ = std::toupper(*it++);
+    if (it != end) {
+      std::copy(it, end, rit);
+      rit += end - it;
+    }
+    it = end;
+    if (it == str.cend()) break;
+  }
+  if (rit != r.cend()) r.erase(rit, r.cend());
+  return r;
+}
+
+template <typename... Args>
+inline std::string make_pascal_name(const Args&... args) {
+  std::string r;
+  (r.append(to_pascal_case(just_name(args))), ...);
+  return r;
 }
 
 inline std::string just_name(const std::string& name) {
@@ -277,3 +333,58 @@ template <typename T>
 auto ptr_iter(const T& iterable) {
   return CPtrIterable{iterable};
 }
+
+inline std::uint64_t fn(std::uint64_t x) {
+  const std::uint64_t m = (std::uint64_t(0xe9846af) << 32) + 0x9b1a615d;
+
+  x ^= x >> 32;
+  x *= m;
+  x ^= x >> 32;
+  x *= m;
+  x ^= x >> 28;
+
+  return x;
+}
+
+inline std::uint32_t hash_mix(std::uint32_t x) {
+  const std::uint32_t m1 = 0x21f0aaad;
+  const std::uint32_t m2 = 0x735a2d97;
+
+  x ^= x >> 16;
+  x *= m1;
+  x ^= x >> 15;
+  x *= m2;
+  x ^= x >> 15;
+
+  return x;
+}
+
+template <typename T>
+void combine_hash(std::size_t& seed, const T& data) {
+  seed = hash_mix(seed + 0x9e3779b9 + std::hash<T>{}(data));
+}
+
+template <typename U, typename V>
+struct std::hash<std::pair<U, V>> {
+  constexpr std::uint64_t operator()(const std::pair<U, V>& pair) const {
+    std::size_t h = std::hash<U>{}(pair.first);
+    combine_hash(h, pair.second);
+    return h;
+  }
+};
+
+template <typename... Args>
+struct std::hash<std::tuple<Args...>> {
+  constexpr std::uint64_t operator()(const std::tuple<Args...>& tuple) const {
+    return impl(tuple, std::index_sequence_for<Args...>{});
+  }
+
+ private:
+  template <std::size_t... Idx>
+  constexpr std::uint64_t impl(const std::tuple<Args...>& tuple,
+                               std::index_sequence<Idx...>) const {
+    std::size_t h = 0;
+    (combine_hash(h, std::get<Idx>(tuple)), ...);
+    return h;
+  }
+};

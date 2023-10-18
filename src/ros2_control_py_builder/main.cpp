@@ -1,9 +1,115 @@
 // STL
+#include <memory>
 #include <unordered_set>
 // ros2_control_py_builder
 #include "parse.hpp"
 #include "utils.hpp"
 #include "write.hpp"
+
+/// @brief init py_utils header for a module
+void init_py_utils(Module& mod);
+/// @brief find each classes' mother
+void init_cls_mothers(Module& mod);
+void init_cls_vmembs(Module& mod);
+void init_overloads(Module& mod);
+void init_header_order(Module& mod);
+
+int main(int argc, char** argv) {
+  ASSERT(argc > 3,
+         "Invalid number of command line arguments, expected at least 3 got "
+             << argc - 1);
+
+  fs::path dst_dir = argv[1];
+  fs::path inc_dir = argv[2];
+  fs::path src_dir = dst_dir / "src";
+  fs::create_directories(src_dir);
+
+  ASSERT_DIR(src_dir);
+  ASSERT_DIR(inc_dir);
+
+  std::vector<Module> modules;
+  for (int i = 3; i < argc; ++i)
+    modules.emplace_back(inc_dir, src_dir, argv[i]);
+
+  for (const Module& mod : modules) {
+    fs::create_directories(mod.src_dir);
+    ASSERT_DIR(mod.src_dir);
+    ASSERT_DIR(mod.inc_dir);
+  }
+
+  for (Module& mod : modules) {
+    for (const fs::directory_entry& entry :
+         fs::recursive_directory_iterator{mod.inc_dir}) {
+      const fs::path& path = entry.path();
+      if (!fs::is_regular_file(entry) || path.extension() != ".hpp" ||
+          path.filename() == "macros.hpp")
+        continue;
+
+      std::string name = path.lexically_relative(mod.inc_dir).string();
+      parse_header(mod, path, name);
+    }
+
+    init_py_utils(mod);
+    init_cls_mothers(mod);
+    init_cls_vmembs(mod);
+    init_overloads(mod);
+    init_header_order(mod);
+  }
+
+  for (const Module& mod : modules) write_module(mod);
+
+  return 0;
+}
+
+void init_py_utils(Module& mod) {
+  for (Header& header : ptr_iter(mod.headers)) {
+    header.required.emplace_back(mod.py_utils->name);
+    auto set_remove = [](Header& header, const std::string& name) {
+      auto it = std::find_if(header.stl_bind.cbegin(), header.stl_bind.cend(),
+                             [name](const auto& bind) {
+                               return std::get<2>(bind) == name ||
+                                      std::get<3>(bind) == name;
+                             });
+      if (it != header.stl_bind.cend()) header.stl_bind.erase(it);
+    };
+    set_remove(header, "hardware_interface::CommandInterface");
+    set_remove(header, "hardware_interface::StateInterface");
+    set_remove(header, "CommandInterface");
+    set_remove(header, "StateInterface");
+    set_remove(header, "hardware_interface::LoanedCommandInterface");
+    set_remove(header, "hardware_interface::LoanedStateInterface");
+    set_remove(header, "LoanedCommandInterface");
+    set_remove(header, "LoanedStateInterface");
+    mod.py_utils->stl_bind.merge(header.stl_bind);
+    header.stl_bind.clear();
+    for (const std::string& ns : header.namespaces)
+      mod.py_utils->namespaces.insert(ns);
+  }
+  mod.headers.emplace_back(mod.py_utils);
+
+  if (mod.name != "hardware_interface") return;
+  auto lni =
+      std::make_shared<Cls>(*mod.py_utils, "rclcpp_lifecycle::node_interfaces",
+                            "LifecycleNodeInterface", "", nullptr);
+  auto names = {"on_configure", "on_cleanup",    "on_shutdown",
+                "on_activate",  "on_deactivate", "on_error"};
+  for (const auto& name : names)
+    lni->membs.emplace_back(
+        new Memb{name,
+                 lni->complete_name,
+                 "CallbackReturn",
+                 {"const rclcpp_lifecycle::State& previous_state"},
+                 {"const rclcpp_lifecycle::State&"},
+                 {"previous_state"},
+                 false,
+                 true,
+                 false,
+                 false,
+                 true});
+  lni->has_virtual = true;
+  lni->is_outsider = true;
+  mod.py_utils->classes.emplace_back(lni);
+}
 
 void init_cls_mothers(Module& mod) {
   std::size_t size = 0;
@@ -21,19 +127,14 @@ void init_cls_mothers(Module& mod) {
       if (cls.init) continue;
       auto it = classes.find(cls.mother_just_name);
       if (it == classes.end()) {
-        std::cerr << cls.name << " did not find " << cls.mother_just_name
-                  << std::endl;
+        std::cerr << "warning: class " << cls.name << " did not find mother "
+                  << cls.mother_just_name << std::endl;
         cls.init = true;
         continue;
       }
       cls.mother = it->second;
       if (header.name != cls.mother->header.name)
         header.required.emplace_back(cls.mother->header.name);
-      if (!cls.using_mother_ctor) continue;
-      for (const Ctor& ctor : cls.mother->ctors)
-        if (std::find(cls.ctors.cbegin(), cls.ctors.cend(), ctor) ==
-            cls.ctors.cend())
-          cls.ctors.emplace_back(ctor);
     }
   }
 }
@@ -50,6 +151,12 @@ void init_cls_vmembs(Module& mod) {
           continue;
         }
         cls.init = true;
+        if (cls.using_mother_ctor) {
+          for (const Ctor& ctor : cls.mother->ctors)
+            if (std::find(cls.ctors.cbegin(), cls.ctors.cend(), ctor) ==
+                cls.ctors.cend())
+              cls.ctors.emplace_back(ctor);
+        }
         if (!cls.mother->has_virtual) continue;
         for (Memb const& vmemb : ptr_iter(cls.mother->find_vmembs())) {
           auto ovrd = cls.find_override(vmemb);
@@ -121,50 +228,4 @@ void init_header_order(Module& mod) {
     }
   }
   mod.headers = std::move(headers);
-}
-
-int main(int argc, char** argv) {
-  ASSERT(argc > 3,
-         "Invalid number of command line arguments, expected at least 3 got "
-             << argc - 1);
-
-  fs::path dst_dir = argv[1];
-  fs::path inc_dir = argv[2];
-  fs::path src_dir = dst_dir / "src";
-  fs::create_directories(src_dir);
-
-  ASSERT_DIR(src_dir);
-  ASSERT_DIR(inc_dir);
-
-  std::vector<Module> modules;
-  for (int i = 3; i < argc; ++i)
-    modules.emplace_back(inc_dir, src_dir, argv[i]);
-
-  for (const Module& mod : modules) {
-    fs::create_directories(mod.src_dir);
-    ASSERT_DIR(mod.src_dir);
-    ASSERT_DIR(mod.inc_dir);
-  }
-
-  for (Module& mod : modules) {
-    for (const fs::directory_entry& entry :
-         fs::recursive_directory_iterator{mod.inc_dir}) {
-      const fs::path& path = entry.path();
-      if (!fs::is_regular_file(entry) || path.extension() != ".hpp" ||
-          path.filename() == "macros.hpp")
-        continue;
-
-      std::string name = path.lexically_relative(mod.inc_dir).string();
-      parse_header(mod, path, name);
-    }
-
-    init_cls_mothers(mod);
-    init_cls_vmembs(mod);
-    init_overloads(mod);
-    init_header_order(mod);
-  }
-
-  for (const Module& mod : modules) write_module(mod);
-
-  return 0;
 }
