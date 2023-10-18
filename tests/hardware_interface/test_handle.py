@@ -12,7 +12,7 @@ FOO_INTERFACE = "FooInterface"
 def test_command_interface():
     value = FloatRef(1.337)
     interface = CommandInterface(JOINT_NAME, FOO_INTERFACE, value)
-    assert interface.get_value() == value.value()
+    assert interface.get_value() == value.get_value()
     interface.set_value(0.0)
     assert interface.get_value() == 0.0
 
@@ -20,7 +20,7 @@ def test_command_interface():
 def test_state_interface():
     value = FloatRef(1.337)
     interface = StateInterface(JOINT_NAME, FOO_INTERFACE, value)
-    assert interface.get_value() == value.value()
+    assert interface.get_value() == value.get_value()
     assert not hasattr(interface, "set_value")
 
 
@@ -42,6 +42,6 @@ def test_value_methods_throw_for_nullptr():
 def test_value_methods_work_on_non_nullptr():
     value = FloatRef(1.337)
     handle = CommandInterface(JOINT_NAME, FOO_INTERFACE, value)
-    assert handle.get_value() == value.value()
+    assert handle.get_value() == value.get_value()
     handle.set_value(0.0)
     assert handle.get_value() == 0.0

@@ -228,9 +228,10 @@ class Ref {
   T& operator*() const { return *value_; }
   T* operator->() const { return value_.get(); }
 
-  T value() const { return *value_; }
+  T get_value() const { return *value_; }
+  Ref& set_value(double value) { *value_ = value; return *this; }
 
-  std::string str() const {
+  std::string repr() const {
     std::ostringstream oss;
     oss << *value_;
     return std::move(oss).str();
@@ -278,8 +279,12 @@ inline void init_)"
   if (header.name == mod.py_utils->name) {
     ofs << R"(  py::class_<Ref<double>>(m, "FloatRef")
       .def(py::init<double>())
-      .def("__repr__", &Ref<double>::str)
-      .def("value", &Ref<double>::value)
+      .def("__repr__", &Ref<double>::repr)
+      .def("__float__", &Ref<double>::get_value)
+      .def("get_value", &Ref<double>::get_value)
+      .def("set_value", &Ref<double>::set_value)
+      .def("set_value", [](Ref<double>& py_self, long long value) { return py_self.set_value(value); })
+      .def("set_value", [](Ref<double>& py_self, const Ref<double>& value) { return py_self.set_value(value); })
       .def("__add__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs + *rhs; })
       .def("__add__", [](const Ref<double>& lhs, double rhs) { return *lhs + rhs; })
       .def("__add__", [](const Ref<double>& lhs, long long rhs) { return *lhs + rhs; })
@@ -304,14 +309,44 @@ inline void init_)"
       .def("__imul__", [](Ref<double>& lhs, const Ref<double>& rhs) { *lhs *= *rhs; return lhs; })
       .def("__imul__", [](Ref<double>& lhs, double rhs) { *lhs *= rhs; return lhs; })
       .def("__imul__", [](Ref<double>& lhs, long long rhs) { *lhs *= rhs; return lhs; })
-      .def("__div__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs / *rhs; })
-      .def("__div__", [](const Ref<double>& lhs, double rhs) { return *lhs / rhs; })
-      .def("__div__", [](const Ref<double>& lhs, long long rhs) { return *lhs / rhs; })
-      .def("__rdiv__", [](const Ref<double>& rhs, double lhs) { return lhs / *rhs; })
-      .def("__rdiv__", [](const Ref<double>& rhs, long long lhs) { return lhs / *rhs; })
-      .def("__idiv__", [](Ref<double>& lhs, const Ref<double>& rhs) { *lhs /= *rhs; return lhs; })
-      .def("__idiv__", [](Ref<double>& lhs, double rhs) { *lhs /= rhs; return lhs; })
-      .def("__idiv__", [](Ref<double>& lhs, long long rhs) { *lhs /= rhs; return lhs; });
+      .def("__truediv__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs / *rhs; })
+      .def("__truediv__", [](const Ref<double>& lhs, double rhs) { return *lhs / rhs; })
+      .def("__truediv__", [](const Ref<double>& lhs, long long rhs) { return *lhs / rhs; })
+      .def("__rtruediv__", [](const Ref<double>& rhs, double lhs) { return lhs / *rhs; })
+      .def("__rtruediv__", [](const Ref<double>& rhs, long long lhs) { return lhs / *rhs; })
+      .def("__itruediv__", [](Ref<double>& lhs, const Ref<double>& rhs) { *lhs /= *rhs; return lhs; })
+      .def("__itruediv__", [](Ref<double>& lhs, double rhs) { *lhs /= rhs; return lhs; })
+      .def("__itruediv__", [](Ref<double>& lhs, long long rhs) { *lhs /= rhs; return lhs; })
+      .def("__eq__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs == *rhs; })
+      .def("__eq__", [](const Ref<double>& lhs, double rhs) { return *lhs == rhs; })
+      .def("__eq__", [](const Ref<double>& lhs, long long rhs) { return *lhs == rhs; })
+      .def("__req__", [](const Ref<double>& rhs, double lhs) { return lhs == *rhs; })
+      .def("__req__", [](const Ref<double>& rhs, long long lhs) { return lhs == *rhs; })
+      .def("__ne__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs != *rhs; })
+      .def("__ne__", [](const Ref<double>& lhs, double rhs) { return *lhs != rhs; })
+      .def("__ne__", [](const Ref<double>& lhs, long long rhs) { return *lhs != rhs; })
+      .def("__rne__", [](const Ref<double>& rhs, double lhs) { return lhs != *rhs; })
+      .def("__rne__", [](const Ref<double>& rhs, long long lhs) { return lhs != *rhs; })
+      .def("__ge__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs >= *rhs; })
+      .def("__ge__", [](const Ref<double>& lhs, double rhs) { return *lhs >= rhs; })
+      .def("__ge__", [](const Ref<double>& lhs, long long rhs) { return *lhs >= rhs; })
+      .def("__rge__", [](const Ref<double>& rhs, double lhs) { return lhs >= *rhs; })
+      .def("__rge__", [](const Ref<double>& rhs, long long lhs) { return lhs >= *rhs; })
+      .def("__gt__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs > *rhs; })
+      .def("__gt__", [](const Ref<double>& lhs, double rhs) { return *lhs > rhs; })
+      .def("__gt__", [](const Ref<double>& lhs, long long rhs) { return *lhs > rhs; })
+      .def("__rgt__", [](const Ref<double>& rhs, double lhs) { return lhs > *rhs; })
+      .def("__rgt__", [](const Ref<double>& rhs, long long lhs) { return lhs > *rhs; })
+      .def("__le__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs <= *rhs; })
+      .def("__le__", [](const Ref<double>& lhs, double rhs) { return *lhs <= rhs; })
+      .def("__le__", [](const Ref<double>& lhs, long long rhs) { return *lhs <= rhs; })
+      .def("__rle__", [](const Ref<double>& rhs, double lhs) { return lhs <= *rhs; })
+      .def("__rle__", [](const Ref<double>& rhs, long long lhs) { return lhs <= *rhs; })
+      .def("__lt__", [](const Ref<double>& lhs, const Ref<double>& rhs) { return *lhs < *rhs; })
+      .def("__lt__", [](const Ref<double>& lhs, double rhs) { return *lhs < rhs; })
+      .def("__lt__", [](const Ref<double>& lhs, long long rhs) { return *lhs < rhs; })
+      .def("__rlt__", [](const Ref<double>& rhs, double lhs) { return lhs < *rhs; })
+      .def("__rlt__", [](const Ref<double>& rhs, long long lhs) { return lhs < *rhs; });
 
   py::class_<RefProp<double>>(m, "FloatRefProp")
       .def(py::init<double>())

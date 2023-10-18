@@ -3,11 +3,17 @@ from ros2_control_py.hardware_interface import (
     HW_IF_POSITION,
     HW_IF_VELOCITY,
     parse_control_resources_from_urdf,
+    HardwareInfo,
 )
 from ros2_control_py import ros2_control_test_assets
 import pytest
 from math import isclose, pi
-from tests.utils import hardware_plugin_name
+
+hardware_plugin_name = (
+    "hardware_class_type"
+    if hasattr(HardwareInfo, "hardware_class_type")
+    else "hardware_plugin_name"
+)
 
 
 def test_empty_string_throws_error():
