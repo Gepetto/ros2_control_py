@@ -17,7 +17,7 @@ hardware_interface
 ------------------
 
 * parse_control_resources_from_urdf
-* CommandInterface / CommandInterface (with FloatRef, see :ref:`_FloatRef`)
+* StateInterface / CommandInterface (with FloatRef, see :ref:`_FloatRef`)
 * Actuator / Sensor / System
 * ActuatorInterface
 * FloatRef
