@@ -10,8 +10,11 @@
 void init_py_utils(Module& mod);
 /// @brief find each classes' mother
 void init_cls_mothers(Module& mod);
+/// @brief inherit virtual members from parent
 void init_cls_vmembs(Module& mod);
+/// @brief find same name functions
 void init_overloads(Module& mod);
+/// @brief resolve header dependencies
 void init_header_order(Module& mod);
 
 int main(int argc, char** argv) {
@@ -19,12 +22,11 @@ int main(int argc, char** argv) {
          "Invalid number of command line arguments, expected at least 4 got "
              << argc - 1);
 
-  const fs::path dst_dir = argv[1];
+  const fs::path src_dir = argv[1];
   const fs::path inc_dir = argv[2];
   const std::string ros_distro = argv[3];
-  const fs::path src_dir = dst_dir / "src";
-  fs::create_directories(src_dir);
 
+  fs::create_directories(src_dir);
   ASSERT_DIR(src_dir);
   ASSERT_DIR(inc_dir);
   ASSERT(ros_distro == "humble" || ros_distro == "rolling",

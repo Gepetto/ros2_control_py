@@ -1,7 +1,8 @@
 #pragma once
 
-// boost
-#include <boost/filesystem.hpp>
+// hpp
+#include "parse.hpp"
+
 // CppParser
 #include <cppast.h>
 #include <cppcompound-info-accessor.h>
@@ -10,11 +11,44 @@
 #include <cppobj-info-accessor.h>
 #include <cppparser.h>
 #include <cppwriter.h>
-// ros2_control_py_builder
-#include "structs.hpp"
+// ros2_control_builder
 #include "utils.hpp"
 
-namespace fs = boost::filesystem;
+inline void find_stl(Header& header, const std::string& type_name,
+                     const std::string& type, const std::string& cpp_type);
+inline void find_stls(Header& header, const std::string& type_name);
+inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr);
+inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor);
+inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb);
+inline void parse_class_using(Cls& cls);
+inline void parse_class(Header& header, CppConstCompoundEPtr cls,
+                        const std::string& ns);
+inline void parse_enum(Header& header, CppEnumEPtr enu);
+inline void parse_var(Header& header, CppVarEPtr var);
+inline void parse_func(Header& header, CppFunctionEPtr func);
+inline void parse_namespace(Header& header, CppConstCompoundEPtr ns,
+                            std::string name);
+
+inline void parse_header(Module& mod, fs::path path, const std::string& name) {
+  CppParser parser;
+  std::string const upper_name = to_upper(mod.name);
+  parser.addIgnorableMacro(upper_name + "_PUBLIC");
+  parser.addIgnorableMacro(upper_name + "_LOCAL");
+  parser.addIgnorableMacro(upper_name + "_EXPORT");
+  parser.addIgnorableMacro(upper_name + "_IMPORT");
+
+  mod.headers.emplace_back(
+      std::make_shared<Header>(name.substr(0, name.rfind('.'))));
+
+  const CppCompoundPtr ast = parse_file(parser, path.string());
+  ASSERT(ast, "Could not parse " << path);
+  // std::cerr << "Parsed " << path << std::endl;
+  for (const CppObjPtr& obj_ns : ast->members()) {
+    CppConstCompoundEPtr ns = obj_ns;
+    if (!ns || !isNamespace(ns) || ns->name() != mod.name) continue;
+    parse_namespace(*mod.headers.back(), ns, ns->name());
+  }
+}
 
 inline void find_stl(Header& header, const std::string& type_name,
                      const std::string& type, const std::string& cpp_type) {
@@ -281,26 +315,5 @@ inline void parse_namespace(Header& header, CppConstCompoundEPtr ns,
       parse_namespace(header, compound, name + "::" + compound->name());
     else if (isClass(compound) || isStruct(compound))
       parse_class(header, compound, name);
-  }
-}
-
-inline void parse_header(Module& mod, fs::path path, const std::string& name) {
-  CppParser parser;
-  std::string const upper_name = to_upper(mod.name);
-  parser.addIgnorableMacro(upper_name + "_PUBLIC");
-  parser.addIgnorableMacro(upper_name + "_LOCAL");
-  parser.addIgnorableMacro(upper_name + "_EXPORT");
-  parser.addIgnorableMacro(upper_name + "_IMPORT");
-
-  mod.headers.emplace_back(
-      std::make_shared<Header>(name.substr(0, name.rfind('.'))));
-
-  const CppCompoundPtr ast = parse_file(parser, path.string());
-  ASSERT(ast, "Could not parse " << path);
-  // std::cerr << "Parsed " << path << std::endl;
-  for (const CppObjPtr& obj_ns : ast->members()) {
-    CppConstCompoundEPtr ns = obj_ns;
-    if (!ns || !isNamespace(ns) || ns->name() != mod.name) continue;
-    parse_namespace(*mod.headers.back(), ns, ns->name());
   }
 }

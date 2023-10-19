@@ -1,14 +1,7 @@
 #pragma once
 
-// STL
-#include <ostream>
-// boost
-#include <boost/filesystem.hpp>
-// ros2_control_pŷ_builder
-#include "structs.hpp"
-#include "utils.hpp"
-
-namespace fs = boost::filesystem;
+// hpp
+#include "write.hpp"
 
 /// @brief output a `Cls` to write an hpp
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls);
@@ -22,10 +15,42 @@ inline std::ostream& operator<<(std::ostream& os, const Var& var);
 inline std::ostream& operator<<(std::ostream& os, const Func& func);
 /// @brief write source files for module `mod` and header `header`
 inline void write_module_header(const Module& mod, const Header& header);
-/// @brief write source files for module `mod`
-inline void write_module(const Module& mod);
 
-// Impl
+void write_module(const Module& mod) {
+  for (const Header& header : ptr_iter(mod.headers))
+    write_module_header(mod, header);
+
+  std::ofstream ofs{mod.src, std::ios::out | std::ios::trunc};
+  ASSERT(ofs, "could not open " << mod.src);
+  ofs << R"(// pybind11
+#include <pybind11/pybind11.h>
+
+// )" << mod.name
+      << '\n';
+  for (const Header& header : ptr_iter(mod.headers))
+    ofs << "#include <" << mod.name << "/" << header.name << "_py.hpp>\n";
+  ofs << R"(
+namespace py = pybind11;
+
+PYBIND11_MODULE()"
+      << mod.name << R"(, m)
+{
+  m.doc() = R"doc(
+            Python bindings for ros2_control functionalities.
+            )doc";
+
+  // Provide custom function signatures
+  py::options options;
+  options.disable_function_signatures();
+
+  // Construct module classes
+)";
+  for (const Header& header : ptr_iter(mod.headers)) {
+    ofs << "  ros2_control_py::bind_" << mod.name << "::init_"
+        << header.proper_name << "(m);\n";
+  }
+  ofs << "}\n";
+}
 
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
   os << "  py::class_<" << (cls.is_outsider ? cls.complete_name : cls.name);
@@ -419,40 +444,4 @@ inline void init_)"
 
 }
 )";
-}
-
-void write_module(const Module& mod) {
-  for (const Header& header : ptr_iter(mod.headers))
-    write_module_header(mod, header);
-
-  std::ofstream ofs{mod.src, std::ios::out | std::ios::trunc};
-  ASSERT(ofs, "could not open " << mod.src);
-  ofs << R"(// pybind11
-#include <pybind11/pybind11.h>
-
-// )" << mod.name
-      << '\n';
-  for (const Header& header : ptr_iter(mod.headers))
-    ofs << "#include <" << mod.name << "/" << header.name << "_py.hpp>\n";
-  ofs << R"(
-namespace py = pybind11;
-
-PYBIND11_MODULE()"
-      << mod.name << R"(, m)
-{
-  m.doc() = R"doc(
-            Python bindings for ros2_control functionalities.
-            )doc";
-
-  // Provide custom function signatures
-  py::options options;
-  options.disable_function_signatures();
-
-  // Construct module classes
-)";
-  for (const Header& header : ptr_iter(mod.headers)) {
-    ofs << "  ros2_control_py::bind_" << mod.name << "::init_"
-        << header.proper_name << "(m);\n";
-  }
-  ofs << "}\n";
 }

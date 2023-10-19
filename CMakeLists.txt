@@ -22,31 +22,24 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
-add_subdirectory(cppparser)
-
-set(_ros2_py_src_dir ${CMAKE_CURRENT_BINARY_DIR}/src)
-
 set(_ros2_py_modules
   hardware_interface
   controller_interface
   ros2_control_test_assets
 )
 
+set(_ros2_py_src_dir ${CMAKE_CURRENT_BINARY_DIR}/src)
+
 set(_ros2_py_src ${_ros2_py_modules})
 list(TRANSFORM _ros2_py_src PREPEND ${_ros2_py_src_dir}/)
 list(TRANSFORM _ros2_py_src APPEND _py.cpp)
 
-add_executable(${PROJECT_NAME}_builder
-  src/${PROJECT_NAME}_builder/main.cpp
-)
-target_link_libraries(${PROJECT_NAME}_builder
-  PRIVATE
-  cppparser
-)
+add_subdirectory(builder)
+
 add_custom_command(
   OUTPUT ${_ros2_py_src}
-  COMMAND ${PROJECT_NAME}_builder "${CMAKE_CURRENT_BINARY_DIR}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
-  DEPENDS ${PROJECT_NAME}_builder
+  COMMAND builder "${_ros2_py_src_dir}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
+  DEPENDS builder
 )
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"

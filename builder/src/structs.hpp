@@ -5,12 +5,8 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-// boost
-#include <boost/filesystem.hpp>
 // ros2_control_py_builder
 #include "utils.hpp"
-
-namespace fs = boost::filesystem;
 
 struct Var {
   Var(const std::string& name) : name{name} {};
@@ -28,10 +24,10 @@ struct Func {
         args_type{std::move(args_type)},
         args_names{std::move(args_names)} {}
 
-  friend bool operator==(const Func& lhs, const Func& rhs) {
+  friend inline bool operator==(const Func& lhs, const Func& rhs) {
     return lhs.name == rhs.name && lhs.args_type == rhs.args_type;
   }
-  friend bool operator!=(const Func& lhs, const Func& rhs) {
+  friend inline bool operator!=(const Func& lhs, const Func& rhs) {
     return !(lhs == rhs);
   }
 
@@ -53,10 +49,10 @@ struct Attr : public Var {
 struct Ctor {
   Ctor(std::vector<std::string>&& args) : args{std::move(args)} {}
 
-  friend bool operator==(const Ctor& lhs, const Ctor& rhs) {
+  friend inline bool operator==(const Ctor& lhs, const Ctor& rhs) {
     return lhs.args == rhs.args;
   }
-  friend bool operator!=(const Ctor& lhs, const Ctor& rhs) {
+  friend inline bool operator!=(const Ctor& lhs, const Ctor& rhs) {
     return !(lhs == rhs);
   }
 
@@ -78,7 +74,7 @@ struct Memb : public Func {
         is_final{is_final},
         is_public{is_public} {}
 
-  Memb clone(const std::string& new_cls) const {
+  inline Memb clone(const std::string& new_cls) const {
     auto new_args = args;
     auto new_args_type = args_type;
     auto new_args_names = args_names;
@@ -95,11 +91,11 @@ struct Memb : public Func {
                 is_public};
   }
 
-  friend bool operator==(const Memb& lhs, const Memb& rhs) {
+  friend inline bool operator==(const Memb& lhs, const Memb& rhs) {
     return lhs.is_const == rhs.is_const &&
            (dynamic_cast<const Func&>(lhs) == dynamic_cast<const Func&>(rhs));
   }
-  friend bool operator!=(const Memb& lhs, const Memb& rhs) {
+  friend inline bool operator!=(const Memb& lhs, const Memb& rhs) {
     return !(lhs == rhs);
   }
 
@@ -268,7 +264,7 @@ struct Module {
   const fs::path inc_dir;
   const fs::path src_dir;
   const fs::path src;
-  std::string name;
+  const std::string name;
   std::vector<std::shared_ptr<Header>> headers{};
-  std::shared_ptr<Header> py_utils;
+  const std::shared_ptr<Header> py_utils;
 };

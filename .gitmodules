@@ -1,3 +1,3 @@
-[submodule "cppparser"]
-	path = cppparser
+[submodule "builder/cppparser"]
+	path = builder/cppparser
 	url = https://github.com/VokunGahrotLaas/fork-cppparser
