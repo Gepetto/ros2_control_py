@@ -19,7 +19,7 @@ hardware_interface
 * parse_control_resources_from_urdf
 * StateInterface / CommandInterface (see FloatRef_ and FloatRefProp_)
 * Actuator / Sensor / System
-* ActuatorInterface
+* ActuatorInterface / SensorInterface / SystemInterface
 * FloatRef_
 
 New Interface
@@ -33,14 +33,14 @@ hardware_interface
 FloatRef
 ^^^^^^^^
 
-FloatRef is an owning reference to a ``double``.
-It decays into a ``double`` or a ``double*`` for interfaces that require it.
-It's purpose is to be used with StateInterface/CommandInterface.
+| FloatRef is an owning reference to a ``double`` that behaves as a float-like object in Python.
+| In C++ it decays into a ``double`` or a ``double*`` for interfaces that require it.
+| It's purpose is to be used with StateInterface/CommandInterface.
 
 Warning:
 	| Although you can use assignment operators like +=,
-	| you **cannot** assign to a FloatRef.
-	| To do that see FloatRefProp_ of use set_value.
+	| you **cannot** assign to a FloatRef with =.
+	| To do that see FloatRefProp_ of use @ / @= / set_value.
 
 Usage:
 
@@ -53,9 +53,13 @@ Usage:
 	assert fr == 8
 	fr.set_value(5 / 2)
 	assert fr == 2.5
+	fr @ 8
+	assert fr == 8
+	fr @= 7
+	assert fr == 7
 	ci = CommandInterface("name", HW_IF_VELOCITY, fr)
-	assert ci.get_value() == 2.5
-	fr.set_value(4)
+	assert ci.get_value() == 7
+	fr @= 4
 	assert ci.get_value() == 4
 	ci.set_value(5)
 	assert fr == 5

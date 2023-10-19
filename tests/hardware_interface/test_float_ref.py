@@ -114,3 +114,7 @@ def test_self_arith():
     for i in range(-10, 11):
         for j in range(-10, 11):
             assert_self_ariths(i * 1.5, j / 2)
+
+
+def test_isnan():
+    assert isnan(FloatRef(nan))
