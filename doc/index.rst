@@ -17,10 +17,10 @@ hardware_interface
 ------------------
 
 * parse_control_resources_from_urdf
-* StateInterface / CommandInterface (with FloatRef, see :ref:`_FloatRef`)
+* StateInterface / CommandInterface (see FloatRef_ and FloatRefProp_)
 * Actuator / Sensor / System
 * ActuatorInterface
-* FloatRef
+* FloatRef_
 
 New Interface
 =============
@@ -35,12 +35,12 @@ FloatRef
 
 FloatRef is an owning reference to a ``double``.
 It decays into a ``double`` or a ``double*`` for interfaces that require it.
-It's purpose is to be used with CommandInterface/CommandInterface.
+It's purpose is to be used with StateInterface/CommandInterface.
 
 Warning:
 	| Although you can use assignment operators like +=,
 	| you **cannot** assign to a FloatRef.
-	| To do that see :ref:`_FloatRefProp` of use set_value.
+	| To do that see FloatRefProp_ of use set_value.
 
 Usage:
 
