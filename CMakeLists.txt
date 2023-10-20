@@ -47,6 +47,15 @@ add_custom_command(
   DEPENDS builder
 )
 
+# __init__ in build/ for tests
+configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/__init__.py"
+  COPYONLY
+)
+# __init__ in install/
+ament_python_install_package(${PROJECT_NAME}
+  PACKAGE_DIR "${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}"
+)
 # python modules
 foreach(_module ${_ros2_py_modules})
   find_package(${_module} REQUIRED)
@@ -63,19 +72,11 @@ foreach(_module ${_ros2_py_modules})
     rclpy
     ${_module}
   )
+  # ${PYTHON_INSTALL_DIR} is exported by ament_python_install_package() above
   install(TARGETS ${_module}_py
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
   )
 endforeach()
-# __init__ in build/ for tests
-configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"
-  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/__init__.py"
-  COPYONLY
-)
-# __init__ in install/
-ament_python_install_package(${PROJECT_NAME}
-  PACKAGE_DIR "${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}"
-)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
