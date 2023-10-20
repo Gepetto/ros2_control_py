@@ -262,110 +262,92 @@ class DummySystemPreparePerform(SystemInterface):
         return return_type.OK
 
 
-def ASSERT_TRUE(a):
-    assert a
-
-
-def EXPECT_TRUE(a):
-    ASSERT_TRUE(a)
-
-
-def ASSERT_EQ(a, b):
-    assert a == b
-
-
-def EXPECT_EQ(a, b):
-    ASSERT_EQ(a, b)
-
-
 def test_dummy_actuator():
     actuator_hw = Actuator(DummyActuator())
 
     mock_hw_info = HardwareInfo()
     state = actuator_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = actuator_hw.export_state_interfaces()
-    ASSERT_EQ(2, len(state_interfaces))
-    EXPECT_EQ("joint1/position", state_interfaces[0].get_name())
-    EXPECT_EQ(HW_IF_POSITION, state_interfaces[0].get_interface_name())
-    EXPECT_EQ("joint1", state_interfaces[0].get_prefix_name())
-    EXPECT_EQ("joint1/velocity", state_interfaces[1].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, state_interfaces[1].get_interface_name())
-    EXPECT_EQ("joint1", state_interfaces[1].get_prefix_name())
+    assert 2 == len(state_interfaces)
+    assert "joint1/position" == state_interfaces[0].get_name()
+    assert HW_IF_POSITION == state_interfaces[0].get_interface_name()
+    assert "joint1" == state_interfaces[0].get_prefix_name()
+    assert "joint1/velocity" == state_interfaces[1].get_name()
+    assert HW_IF_VELOCITY == state_interfaces[1].get_interface_name()
+    assert "joint1" == state_interfaces[1].get_prefix_name()
 
     command_interfaces = actuator_hw.export_command_interfaces()
-    ASSERT_EQ(1, len(command_interfaces))
-    EXPECT_EQ("joint1/velocity", command_interfaces[0].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, command_interfaces[0].get_interface_name())
-    EXPECT_EQ("joint1", command_interfaces[0].get_prefix_name())
+    assert 1 == len(command_interfaces)
+    assert "joint1/velocity" == command_interfaces[0].get_name()
+    assert HW_IF_VELOCITY == command_interfaces[0].get_interface_name()
+    assert "joint1" == command_interfaces[0].get_prefix_name()
 
     velocity_value = 1.0
     command_interfaces[0].set_value(velocity_value)
-    ASSERT_EQ(return_type.ERROR, actuator_hw.write(TIME, PERIOD))
+    assert return_type.ERROR == actuator_hw.write(TIME, PERIOD)
 
     # Noting should change because it is UNCONFIGURED
     for step in range(10):
-        ASSERT_EQ(return_type.ERROR, actuator_hw.read(TIME, PERIOD))
+        assert return_type.ERROR == actuator_hw.read(TIME, PERIOD)
 
-        ASSERT_TRUE(isnan(state_interfaces[0].get_value()))  # position value
-        ASSERT_TRUE(isnan(state_interfaces[1].get_value()))  # velocity
+        assert isnan(state_interfaces[0].get_value())  # position value
+        assert isnan(state_interfaces[1].get_value())  # velocity
 
-        ASSERT_EQ(return_type.ERROR, actuator_hw.write(TIME, PERIOD))
+        assert return_type.ERROR == actuator_hw.write(TIME, PERIOD)
 
     state = actuator_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_INACTIVE, state.id())
-    EXPECT_EQ(INACTIVE, state.label())
+    assert State.PRIMARY_STATE_INACTIVE == state.id()
+    assert INACTIVE == state.label()
 
     # Read and Write are working because it is INACTIVE
     for step in range(10):
-        ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ(step * velocity_value, state_interfaces[0].get_value())
+        assert step * velocity_value == state_interfaces[0].get_value()
         # position value
-        EXPECT_EQ(velocity_value if step else 0, state_interfaces[1].get_value())
+        assert velocity_value if step else 0 == state_interfaces[1].get_value()
         # velocity
 
-        ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     state = actuator_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
     # Read and Write are working because it is ACTIVE
     for step in range(10):
-        ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ((10 + step) * velocity_value, state_interfaces[0].get_value())
+        assert (10 + step) * velocity_value == state_interfaces[0].get_value()
         # position value
-        EXPECT_EQ(velocity_value, state_interfaces[1].get_value())
+        assert velocity_value == state_interfaces[1].get_value()
         # velocity
 
-        ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     state = actuator_hw.shutdown()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # Noting should change because it is FINALIZED
     for step in range(10):
-        ASSERT_EQ(return_type.ERROR, actuator_hw.read(TIME, PERIOD))
+        assert return_type.ERROR == actuator_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ(20 * velocity_value, state_interfaces[0].get_value())
+        assert 20 * velocity_value == state_interfaces[0].get_value()
         # position value
-        EXPECT_EQ(0, state_interfaces[1].get_value())
+        assert 0 == state_interfaces[1].get_value()
         # velocity
 
-        ASSERT_EQ(return_type.ERROR, actuator_hw.write(TIME, PERIOD))
+        assert return_type.ERROR == actuator_hw.write(TIME, PERIOD)
 
-    EXPECT_EQ(
-        return_type.OK,
-        actuator_hw.prepare_command_mode_switch(VectorString([""]), VectorString([""])),
+    assert return_type.OK == actuator_hw.prepare_command_mode_switch(
+        VectorString([""]), VectorString([""])
     )
-    EXPECT_EQ(
-        return_type.OK,
-        actuator_hw.perform_command_mode_switch(VectorString([""]), VectorString([""])),
+    assert return_type.OK == actuator_hw.perform_command_mode_switch(
+        VectorString([""]), VectorString([""])
     )
 
 
@@ -374,29 +356,29 @@ def test_dummy_sensor():
 
     mock_hw_info = HardwareInfo()
     state = sensor_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = sensor_hw.export_state_interfaces()
-    ASSERT_EQ(1, len(state_interfaces))
-    EXPECT_EQ("joint1/voltage", state_interfaces[0].get_name())
-    EXPECT_EQ("voltage", state_interfaces[0].get_interface_name())
-    EXPECT_EQ("joint1", state_interfaces[0].get_prefix_name())
-    EXPECT_TRUE(isnan(state_interfaces[0].get_value()))
+    assert 1 == len(state_interfaces)
+    assert "joint1/voltage" == state_interfaces[0].get_name()
+    assert "voltage" == state_interfaces[0].get_interface_name()
+    assert "joint1" == state_interfaces[0].get_prefix_name()
+    assert isnan(state_interfaces[0].get_value())
 
     # Not updated because is is UNCONFIGURED
     sensor_hw.read(TIME, PERIOD)
-    EXPECT_TRUE(isnan(state_interfaces[0].get_value()))
+    assert isnan(state_interfaces[0].get_value())
 
     # Updated because is is INACTIVE
     state = sensor_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_INACTIVE, state.id())
-    EXPECT_EQ(INACTIVE, state.label())
-    EXPECT_EQ(0, state_interfaces[0].get_value())
+    assert State.PRIMARY_STATE_INACTIVE == state.id()
+    assert INACTIVE == state.label()
+    assert 0 == state_interfaces[0].get_value()
 
     # It can read now
     sensor_hw.read(TIME, PERIOD)
-    EXPECT_EQ(0x666, state_interfaces[0].get_value())
+    assert 0x666 == state_interfaces[0].get_value()
 
 
 def test_dummy_system():
@@ -404,143 +386,135 @@ def test_dummy_system():
 
     mock_hw_info = HardwareInfo()
     state = system_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = system_hw.export_state_interfaces()
-    ASSERT_EQ(6, len(state_interfaces))
-    EXPECT_EQ("joint1/position", state_interfaces[0].get_name())
-    EXPECT_EQ(HW_IF_POSITION, state_interfaces[0].get_interface_name())
-    EXPECT_EQ("joint1", state_interfaces[0].get_prefix_name())
-    EXPECT_EQ("joint1/velocity", state_interfaces[1].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, state_interfaces[1].get_interface_name())
-    EXPECT_EQ("joint1", state_interfaces[1].get_prefix_name())
-    EXPECT_EQ("joint2/position", state_interfaces[2].get_name())
-    EXPECT_EQ(HW_IF_POSITION, state_interfaces[2].get_interface_name())
-    EXPECT_EQ("joint2", state_interfaces[2].get_prefix_name())
-    EXPECT_EQ("joint2/velocity", state_interfaces[3].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, state_interfaces[3].get_interface_name())
-    EXPECT_EQ("joint2", state_interfaces[3].get_prefix_name())
-    EXPECT_EQ("joint3/position", state_interfaces[4].get_name())
-    EXPECT_EQ(HW_IF_POSITION, state_interfaces[4].get_interface_name())
-    EXPECT_EQ("joint3", state_interfaces[4].get_prefix_name())
-    EXPECT_EQ("joint3/velocity", state_interfaces[5].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, state_interfaces[5].get_interface_name())
-    EXPECT_EQ("joint3", state_interfaces[5].get_prefix_name())
+    assert 6 == len(state_interfaces)
+    assert "joint1/position" == state_interfaces[0].get_name()
+    assert HW_IF_POSITION == state_interfaces[0].get_interface_name()
+    assert "joint1" == state_interfaces[0].get_prefix_name()
+    assert "joint1/velocity" == state_interfaces[1].get_name()
+    assert HW_IF_VELOCITY == state_interfaces[1].get_interface_name()
+    assert "joint1" == state_interfaces[1].get_prefix_name()
+    assert "joint2/position" == state_interfaces[2].get_name()
+    assert HW_IF_POSITION == state_interfaces[2].get_interface_name()
+    assert "joint2" == state_interfaces[2].get_prefix_name()
+    assert "joint2/velocity" == state_interfaces[3].get_name()
+    assert HW_IF_VELOCITY == state_interfaces[3].get_interface_name()
+    assert "joint2" == state_interfaces[3].get_prefix_name()
+    assert "joint3/position" == state_interfaces[4].get_name()
+    assert HW_IF_POSITION == state_interfaces[4].get_interface_name()
+    assert "joint3" == state_interfaces[4].get_prefix_name()
+    assert "joint3/velocity" == state_interfaces[5].get_name()
+    assert HW_IF_VELOCITY == state_interfaces[5].get_interface_name()
+    assert "joint3" == state_interfaces[5].get_prefix_name()
 
     command_interfaces = system_hw.export_command_interfaces()
-    ASSERT_EQ(3, len(command_interfaces))
-    EXPECT_EQ("joint1/velocity", command_interfaces[0].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, command_interfaces[0].get_interface_name())
-    EXPECT_EQ("joint1", command_interfaces[0].get_prefix_name())
-    EXPECT_EQ("joint2/velocity", command_interfaces[1].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, command_interfaces[1].get_interface_name())
-    EXPECT_EQ("joint2", command_interfaces[1].get_prefix_name())
-    EXPECT_EQ("joint3/velocity", command_interfaces[2].get_name())
-    EXPECT_EQ(HW_IF_VELOCITY, command_interfaces[2].get_interface_name())
-    EXPECT_EQ("joint3", command_interfaces[2].get_prefix_name())
+    assert 3 == len(command_interfaces)
+    assert "joint1/velocity" == command_interfaces[0].get_name()
+    assert HW_IF_VELOCITY == command_interfaces[0].get_interface_name()
+    assert "joint1" == command_interfaces[0].get_prefix_name()
+    assert "joint2/velocity" == command_interfaces[1].get_name()
+    assert HW_IF_VELOCITY == command_interfaces[1].get_interface_name()
+    assert "joint2" == command_interfaces[1].get_prefix_name()
+    assert "joint3/velocity" == command_interfaces[2].get_name()
+    assert HW_IF_VELOCITY == command_interfaces[2].get_interface_name()
+    assert "joint3" == command_interfaces[2].get_prefix_name()
 
     velocity_value = 1.0
     command_interfaces[0].set_value(velocity_value)  # velocity
     command_interfaces[1].set_value(velocity_value)  # velocity
     command_interfaces[2].set_value(velocity_value)  # velocity
-    ASSERT_EQ(return_type.ERROR, system_hw.write(TIME, PERIOD))
+    assert return_type.ERROR == system_hw.write(TIME, PERIOD)
 
     # Noting should change because it is UNCONFIGURED
     for step in range(10):
-        ASSERT_EQ(return_type.ERROR, system_hw.read(TIME, PERIOD))
+        assert return_type.ERROR == system_hw.read(TIME, PERIOD)
 
-        ASSERT_TRUE(isnan(state_interfaces[0].get_value()))  # position value
-        ASSERT_TRUE(isnan(state_interfaces[1].get_value()))  # velocity
-        ASSERT_TRUE(isnan(state_interfaces[2].get_value()))  # position value
-        ASSERT_TRUE(isnan(state_interfaces[3].get_value()))  # velocity
-        ASSERT_TRUE(isnan(state_interfaces[4].get_value()))  # position value
-        ASSERT_TRUE(isnan(state_interfaces[5].get_value()))  # velocity
+        assert isnan(state_interfaces[0].get_value())  # position value
+        assert isnan(state_interfaces[1].get_value())  # velocity
+        assert isnan(state_interfaces[2].get_value())  # position value
+        assert isnan(state_interfaces[3].get_value())  # velocity
+        assert isnan(state_interfaces[4].get_value())  # position value
+        assert isnan(state_interfaces[5].get_value())  # velocity
 
-        ASSERT_EQ(return_type.ERROR, system_hw.write(TIME, PERIOD))
+        assert return_type.ERROR == system_hw.write(TIME, PERIOD)
 
     state = system_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_INACTIVE, state.id())
-    EXPECT_EQ(INACTIVE, state.label())
+    assert State.PRIMARY_STATE_INACTIVE == state.id()
+    assert INACTIVE == state.label()
 
     # Read and Write are working because it is INACTIVE
     for step in range(10):
-        ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
+        assert return_type.OK == system_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ(
-            step * velocity_value, state_interfaces[0].get_value()
+        assert (
+            step * velocity_value == state_interfaces[0].get_value()
         )  # position value
-        EXPECT_EQ(
-            velocity_value if step else 0, state_interfaces[1].get_value()
+        assert (
+            velocity_value if step else 0 == state_interfaces[1].get_value()
         )  # velocity
-        EXPECT_EQ(
-            step * velocity_value, state_interfaces[2].get_value()
+        assert (
+            step * velocity_value == state_interfaces[2].get_value()
         )  # position value
-        EXPECT_EQ(
-            velocity_value if step else 0, state_interfaces[3].get_value()
+        assert (
+            velocity_value if step else 0 == state_interfaces[3].get_value()
         )  # velocity
-        EXPECT_EQ(
-            step * velocity_value, state_interfaces[4].get_value()
+        assert (
+            step * velocity_value == state_interfaces[4].get_value()
         )  # position value
-        EXPECT_EQ(
-            velocity_value if step else 0, state_interfaces[5].get_value()
+        assert (
+            velocity_value if step else 0 == state_interfaces[5].get_value()
         )  # velocity
 
-        ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+        assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     state = system_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
     # Read and Write are working because it is ACTIVE
     for step in range(10):
-        ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
+        assert return_type.OK == system_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ(
-            (10 + step) * velocity_value, state_interfaces[0].get_value()
-        )  # position value
-        EXPECT_EQ(velocity_value, state_interfaces[1].get_value())  # velocity
-        EXPECT_EQ(
-            (10 + step) * velocity_value, state_interfaces[2].get_value()
-        )  # position value
-        EXPECT_EQ(velocity_value, state_interfaces[3].get_value())  # velocity
-        EXPECT_EQ(
-            (10 + step) * velocity_value, state_interfaces[4].get_value()
-        )  # position value
-        EXPECT_EQ(velocity_value, state_interfaces[5].get_value())  # velocity
+        assert (10 + step) * velocity_value == state_interfaces[
+            0
+        ].get_value()  # position value
+        assert velocity_value == state_interfaces[1].get_value()  # velocity
+        assert (10 + step) * velocity_value == state_interfaces[
+            2
+        ].get_value()  # position value
+        assert velocity_value == state_interfaces[3].get_value()  # velocity
+        assert (10 + step) * velocity_value == state_interfaces[
+            4
+        ].get_value()  # position value
+        assert velocity_value == state_interfaces[5].get_value()  # velocity
 
-        ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+        assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     state = system_hw.shutdown()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # Noting should change because it is FINALIZED
     for step in range(10):
-        ASSERT_EQ(return_type.ERROR, system_hw.read(TIME, PERIOD))
+        assert return_type.ERROR == system_hw.read(TIME, PERIOD)
 
-        EXPECT_EQ(
-            20 * velocity_value, state_interfaces[0].get_value()
-        )  # position value
-        EXPECT_EQ(0, state_interfaces[1].get_value())  # velocity
-        EXPECT_EQ(
-            20 * velocity_value, state_interfaces[2].get_value()
-        )  # position value
-        EXPECT_EQ(0, state_interfaces[3].get_value())  # velocity
-        EXPECT_EQ(
-            20 * velocity_value, state_interfaces[4].get_value()
-        )  # position value
-        EXPECT_EQ(0, state_interfaces[5].get_value())  # velocity
+        assert 20 * velocity_value == state_interfaces[0].get_value()  # position value
+        assert 0 == state_interfaces[1].get_value()  # velocity
+        assert 20 * velocity_value == state_interfaces[2].get_value()  # position value
+        assert 0 == state_interfaces[3].get_value()  # velocity
+        assert 20 * velocity_value == state_interfaces[4].get_value()  # position value
+        assert 0 == state_interfaces[5].get_value()  # velocity
 
-        ASSERT_EQ(return_type.ERROR, system_hw.write(TIME, PERIOD))
+        assert return_type.ERROR == system_hw.write(TIME, PERIOD)
 
-    EXPECT_EQ(
-        return_type.OK,
-        system_hw.prepare_command_mode_switch(VectorString([""]), VectorString([""])),
+    assert return_type.OK == system_hw.prepare_command_mode_switch(
+        VectorString([""]), VectorString([""])
     )
-    EXPECT_EQ(
-        return_type.OK,
-        system_hw.perform_command_mode_switch(VectorString([""]), VectorString([""])),
+    assert return_type.OK == system_hw.perform_command_mode_switch(
+        VectorString([""]), VectorString([""])
     )
 
 
@@ -549,27 +523,19 @@ def test_dummy_command_mode_system():
 
     mock_hw_info = HardwareInfo()
     state = system_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     one_key = VectorString(["joint1/position"])
     two_keys = VectorString(["joint1/position", "joint1/velocity"])
 
     # Only calls with (one_key, two_keys) should return OK
-    EXPECT_EQ(
-        return_type.ERROR, system_hw.prepare_command_mode_switch(one_key, one_key)
-    )
-    EXPECT_EQ(
-        return_type.ERROR, system_hw.perform_command_mode_switch(one_key, one_key)
-    )
-    EXPECT_EQ(return_type.OK, system_hw.prepare_command_mode_switch(one_key, two_keys))
-    EXPECT_EQ(return_type.OK, system_hw.perform_command_mode_switch(one_key, two_keys))
-    EXPECT_EQ(
-        return_type.ERROR, system_hw.prepare_command_mode_switch(two_keys, one_key)
-    )
-    EXPECT_EQ(
-        return_type.ERROR, system_hw.perform_command_mode_switch(two_keys, one_key)
-    )
+    assert return_type.ERROR, system_hw.prepare_command_mode_switch(one_key == one_key)
+    assert return_type.ERROR, system_hw.perform_command_mode_switch(one_key == one_key)
+    assert return_type.OK == system_hw.prepare_command_mode_switch(one_key, two_keys)
+    assert return_type.OK == system_hw.perform_command_mode_switch(one_key, two_keys)
+    assert return_type.ERROR, system_hw.prepare_command_mode_switch(two_keys == one_key)
+    assert return_type.ERROR, system_hw.perform_command_mode_switch(two_keys == one_key)
 
 
 def test_dummy_actuator_read_error_behavior():
@@ -577,53 +543,53 @@ def test_dummy_actuator_read_error_behavior():
 
     mock_hw_info = HardwareInfo()
     state = actuator_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = actuator_hw.export_state_interfaces()
     command_interfaces = actuator_hw.export_command_interfaces()
     state = actuator_hw.configure()
     state = actuator_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+    assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is first time therefore recoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, actuator_hw.read(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == actuator_hw.read(TIME, PERIOD)
 
     state = actuator_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     # activate again and expect reset values
     state = actuator_hw.configure()
-    EXPECT_EQ(state_interfaces[0].get_value(), 0)
-    EXPECT_EQ(command_interfaces[0].get_value(), 0)
+    assert state_interfaces[0].get_value() == 0
+    assert command_interfaces[0].get_value() == 0
 
     state = actuator_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+    assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is the second time therefore unrecoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, actuator_hw.read(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == actuator_hw.read(TIME, PERIOD)
 
     state = actuator_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # can not change state anymore
     state = actuator_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
 
 def test_dummy_actuator_write_error_behavior():
@@ -631,53 +597,53 @@ def test_dummy_actuator_write_error_behavior():
 
     mock_hw_info = HardwareInfo()
     state = actuator_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = actuator_hw.export_state_interfaces()
     command_interfaces = actuator_hw.export_command_interfaces()
     state = actuator_hw.configure()
     state = actuator_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+    assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is first time therefore recoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, actuator_hw.write(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.write(TIME, PERIOD)
+    assert return_type.ERROR == actuator_hw.write(TIME, PERIOD)
 
     state = actuator_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     # activate again and expect reset values
     state = actuator_hw.configure()
-    EXPECT_EQ(state_interfaces[0].get_value(), 0)
-    EXPECT_EQ(command_interfaces[0].get_value(), 0)
+    assert state_interfaces[0].get_value() == 0
+    assert command_interfaces[0].get_value() == 0
 
     state = actuator_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, actuator_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
+    assert return_type.OK == actuator_hw.read(TIME, PERIOD)
+    assert return_type.OK == actuator_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is the second time therefore unrecoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, actuator_hw.write(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, actuator_hw.write(TIME, PERIOD))
+        assert return_type.OK == actuator_hw.write(TIME, PERIOD)
+    assert return_type.ERROR == actuator_hw.write(TIME, PERIOD)
 
     state = actuator_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # can not change state anymore
     state = actuator_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
 
 def test_dummy_sensor_read_error_behavior():
@@ -690,41 +656,41 @@ def test_dummy_sensor_read_error_behavior():
     # Updated because is is INACTIVE
     state = sensor_hw.configure()
     state = sensor_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, sensor_hw.read(TIME, PERIOD))
+    assert return_type.OK == sensor_hw.read(TIME, PERIOD)
 
     # Initiate recoverable error - call read 99 times OK and on 100-time will return error
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, sensor_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, sensor_hw.read(TIME, PERIOD))
+        assert return_type.OK == sensor_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == sensor_hw.read(TIME, PERIOD)
 
     state = sensor_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     # activate again and expect reset values
     state = sensor_hw.configure()
-    EXPECT_EQ(state_interfaces[0].get_value(), 0)
+    assert state_interfaces[0].get_value() == 0
 
     state = sensor_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
     # Initiate unrecoverable error - call read 99 times OK and on 100-time will return error
     for i in range(1, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, sensor_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, sensor_hw.read(TIME, PERIOD))
+        assert return_type.OK == sensor_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == sensor_hw.read(TIME, PERIOD)
 
     state = sensor_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # can not change state anymore
     state = sensor_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
 
 def test_dummy_system_read_error_behavior():
@@ -732,54 +698,54 @@ def test_dummy_system_read_error_behavior():
 
     mock_hw_info = HardwareInfo()
     state = system_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = system_hw.export_state_interfaces()
     command_interfaces = system_hw.export_command_interfaces()
     state = system_hw.configure()
     state = system_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+    assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is first time therefore recoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, system_hw.read(TIME, PERIOD))
+        assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == system_hw.read(TIME, PERIOD)
 
     state = system_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     # activate again and expect reset values
     state = system_hw.configure()
     for index in range(6):
-        EXPECT_EQ(state_interfaces[index].get_value(), 0)
+        assert state_interfaces[index].get_value() == 0
     for index in range(3):
-        EXPECT_EQ(command_interfaces[index].get_value(), 0)
+        assert command_interfaces[index].get_value() == 0
     state = system_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+    assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is the second time therefore unrecoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, system_hw.read(TIME, PERIOD))
+        assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.ERROR == system_hw.read(TIME, PERIOD)
 
     state = system_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # can not change state anymore
     state = system_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
 
 def test_dummy_system_write_error_behavior():
@@ -787,51 +753,51 @@ def test_dummy_system_write_error_behavior():
 
     mock_hw_info = HardwareInfo()
     state = system_hw.initialize(mock_hw_info)
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     state_interfaces = system_hw.export_state_interfaces()
     command_interfaces = system_hw.export_command_interfaces()
     state = system_hw.configure()
     state = system_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+    assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is first time therefore recoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, system_hw.write(TIME, PERIOD))
+        assert return_type.OK == system_hw.write(TIME, PERIOD)
+    assert return_type.ERROR == system_hw.write(TIME, PERIOD)
 
     state = system_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_UNCONFIGURED, state.id())
-    EXPECT_EQ(UNCONFIGURED, state.label())
+    assert State.PRIMARY_STATE_UNCONFIGURED == state.id()
+    assert UNCONFIGURED == state.label()
 
     # activate again and expect reset values
     state = system_hw.configure()
     for index in range(6):
-        EXPECT_EQ(state_interfaces[index].get_value(), 0)
+        assert state_interfaces[index].get_value() == 0
     for index in range(3):
-        EXPECT_EQ(command_interfaces[index].get_value(), 0)
+        assert command_interfaces[index].get_value() == 0
     state = system_hw.activate()
-    EXPECT_EQ(State.PRIMARY_STATE_ACTIVE, state.id())
-    EXPECT_EQ(ACTIVE, state.label())
+    assert State.PRIMARY_STATE_ACTIVE == state.id()
+    assert ACTIVE == state.label()
 
-    ASSERT_EQ(return_type.OK, system_hw.read(TIME, PERIOD))
-    ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
+    assert return_type.OK == system_hw.read(TIME, PERIOD)
+    assert return_type.OK == system_hw.write(TIME, PERIOD)
 
     # Initiate error on write (this is the second time therefore unrecoverable)
     for i in range(2, TRIGGER_READ_WRITE_ERROR_CALLS):
-        ASSERT_EQ(return_type.OK, system_hw.write(TIME, PERIOD))
-    ASSERT_EQ(return_type.ERROR, system_hw.write(TIME, PERIOD))
+        assert return_type.OK == system_hw.write(TIME, PERIOD)
+    assert return_type.ERROR == system_hw.write(TIME, PERIOD)
 
     state = system_hw.get_state()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
 
     # can not change state anymore
     state = system_hw.configure()
-    EXPECT_EQ(State.PRIMARY_STATE_FINALIZED, state.id())
-    EXPECT_EQ(FINALIZED, state.label())
+    assert State.PRIMARY_STATE_FINALIZED == state.id()
+    assert FINALIZED == state.label()
