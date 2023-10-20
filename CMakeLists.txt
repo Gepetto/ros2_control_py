@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(ros2_control_py VERSION 0.0.2)
 
+## default ros std versions/warnings
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -15,13 +16,19 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# ROS deps
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
+# Python deps
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
 
+## compiles builder
+add_subdirectory(builder)
+
+## Vars
 set(_ros2_py_modules
   hardware_interface
   controller_interface
@@ -34,21 +41,13 @@ set(_ros2_py_src ${_ros2_py_modules})
 list(TRANSFORM _ros2_py_src PREPEND ${_ros2_py_src_dir}/)
 list(TRANSFORM _ros2_py_src APPEND _py.cpp)
 
-add_subdirectory(builder)
-
 add_custom_command(
   OUTPUT ${_ros2_py_src}
   COMMAND builder "${_ros2_py_src_dir}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
   DEPENDS builder
 )
 
-configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"
-  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/__init__.py"
-  COPYONLY
-)
-ament_python_install_package(${PROJECT_NAME}
-  PACKAGE_DIR "${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}"
-)
+# python modules
 foreach(_module ${_ros2_py_modules})
   find_package(${_module} REQUIRED)
   pybind11_add_module(${_module}_py
@@ -68,6 +67,15 @@ foreach(_module ${_ros2_py_modules})
     DESTINATION "${PYTHON_INSTALL_DIR}/${PROJECT_NAME}"
   )
 endforeach()
+# __init__ in build/ for tests
+configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/__init__.py"
+  COPYONLY
+)
+# __init__ in install/
+ament_python_install_package(${PROJECT_NAME}
+  PACKAGE_DIR "${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}"
+)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
