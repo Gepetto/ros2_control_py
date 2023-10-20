@@ -5,8 +5,8 @@
 
 /// @brief wrapper over a `const T&` and a `const U&`, display all elements of a
 /// `T` with a 'U' as a separator
-/// @expample std::cout << Sep{std::vector<int>{1, 2, 3}, ", "} << std::endl; //
-/// output: `1, 2, 3`
+/// @example std::cout << Sep{std::vector<int>{1, 2, 3}, ", "} << std::endl;
+/// // output: `1, 2, 3`
 template <typename T, typename U>
 class Sep;
 /// @brief ostream writer for `Sep<T, U>`
