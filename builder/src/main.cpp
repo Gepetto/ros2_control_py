@@ -1,5 +1,6 @@
 // STL
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 // ros2_control_py_builder
 #include "parse.hpp"
