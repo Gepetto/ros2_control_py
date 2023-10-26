@@ -143,6 +143,7 @@ struct Cls {
   }
 
   std::shared_ptr<const Memb> find_mutable_overload(const Memb& memb) const {
+    if (!memb.is_const) return nullptr;
     auto it = std::find_if(membs.cbegin(), membs.cend(),
                            [memb](std::shared_ptr<const Memb> other) {
                              return !other->is_const &&

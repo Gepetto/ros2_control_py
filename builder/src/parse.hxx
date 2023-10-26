@@ -177,8 +177,8 @@ inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb) {
     cls.membs.emplace_back(std::make_shared<Memb>(
         memb->name_, cls.name, ret_type, std::move(args_cpy),
         std::move(args_type_cpy), std::move(args_names_cpy),
-        isConst(memb.get()), isVirtual(memb.get()), isPureVirtual(memb.get()),
-        isFinal(memb.get()), isPublic(memb.get())));
+        isConst(memb.get()), false, false, isFinal(memb.get()),
+        isPublic(memb.get())));
   }
   cls.membs.emplace_back(std::make_shared<Memb>(
       memb->name_, cls.name, ret_type, std::move(args), std::move(args_type),
