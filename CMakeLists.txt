@@ -46,6 +46,9 @@ add_custom_command(
   COMMAND builder "${_ros2_py_src_dir}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
   DEPENDS builder
 )
+add_custom_target(run_builder
+  DEPENDS ${_ros2_py_src}
+)
 
 # __init__ in build/ for tests
 configure_file("${CMAKE_CURRENT_LIST_DIR}/python/${PROJECT_NAME}/__init__.py"
@@ -62,6 +65,7 @@ foreach(_module ${_ros2_py_modules})
   pybind11_add_module(${_module}_py
     "${_ros2_py_src_dir}/${_module}_py.cpp"
   )
+  add_dependencies(${_module}_py run_builder)
   set_target_properties(${_module}_py
     PROPERTIES OUTPUT_NAME ${PROJECT_NAME}/${_module}
   )
