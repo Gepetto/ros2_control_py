@@ -24,10 +24,10 @@ struct Func {
         args_type{std::move(args_type)},
         args_names{std::move(args_names)} {}
 
-  friend inline bool operator==(const Func& lhs, const Func& rhs) {
+  friend inline bool operator==(const Func& lhs, const Func& rhs) noexcept {
     return lhs.name == rhs.name && lhs.args_type == rhs.args_type;
   }
-  friend inline bool operator!=(const Func& lhs, const Func& rhs) {
+  friend inline bool operator!=(const Func& lhs, const Func& rhs) noexcept {
     return !(lhs == rhs);
   }
 
@@ -47,12 +47,12 @@ struct Attr : public Var {
 };
 
 struct Ctor {
-  Ctor(std::vector<std::string>&& args) : args{std::move(args)} {}
+  Ctor(std::vector<std::string>&& args) noexcept : args{std::move(args)} {}
 
-  friend inline bool operator==(const Ctor& lhs, const Ctor& rhs) {
+  friend inline bool operator==(const Ctor& lhs, const Ctor& rhs) noexcept {
     return lhs.args == rhs.args;
   }
-  friend inline bool operator!=(const Ctor& lhs, const Ctor& rhs) {
+  friend inline bool operator!=(const Ctor& lhs, const Ctor& rhs) noexcept {
     return !(lhs == rhs);
   }
 
@@ -91,11 +91,11 @@ struct Memb : public Func {
                 is_public};
   }
 
-  friend inline bool operator==(const Memb& lhs, const Memb& rhs) {
+  friend inline bool operator==(const Memb& lhs, const Memb& rhs) noexcept {
     return lhs.is_const == rhs.is_const &&
-           (dynamic_cast<const Func&>(lhs) == dynamic_cast<const Func&>(rhs));
+           (static_cast<const Func&>(lhs) == static_cast<const Func&>(rhs));
   }
-  friend inline bool operator!=(const Memb& lhs, const Memb& rhs) {
+  friend inline bool operator!=(const Memb& lhs, const Memb& rhs) noexcept {
     return !(lhs == rhs);
   }
 
@@ -123,7 +123,7 @@ struct Cls {
         mother{std::move(mother)},
         init{mother_name.empty()} {}
 
-  auto find_overloads(const std::string& name) {
+  auto find_overloads(const std::string& name) noexcept {
     std::vector<std::shared_ptr<Memb>> found;
     for (auto it = membs.begin(); it != membs.end();) {
       it = std::find_if(it, membs.end(),
@@ -135,14 +135,15 @@ struct Cls {
     return found;
   }
 
-  std::shared_ptr<Memb> find_override(const Memb& memb) {
+  std::shared_ptr<Memb> find_override(const Memb& memb) noexcept {
     auto it = std::find_if(
         membs.begin(), membs.end(),
         [memb](std::shared_ptr<const Memb> other) { return *other == memb; });
     return it != membs.cend() ? *it : nullptr;
   }
 
-  std::shared_ptr<const Memb> find_mutable_overload(const Memb& memb) const {
+  std::shared_ptr<const Memb> find_mutable_overload(
+      const Memb& memb) const noexcept {
     if (!memb.is_const) return nullptr;
     auto it = std::find_if(membs.cbegin(), membs.cend(),
                            [memb](std::shared_ptr<const Memb> other) {
@@ -153,7 +154,7 @@ struct Cls {
     return it != membs.cend() ? *it : nullptr;
   }
 
-  auto find_vmembs() const {
+  auto find_vmembs() const noexcept {
     std::vector<std::shared_ptr<const Memb>> found;
     for (auto it = membs.cbegin(); it != membs.cend();) {
       it = std::find_if(it, membs.cend(), [](std::shared_ptr<const Memb> memb) {
@@ -164,7 +165,7 @@ struct Cls {
     return found;
   }
 
-  auto find_pmembs() const {
+  auto find_pmembs() const noexcept {
     std::vector<std::shared_ptr<const Memb>> found;
     for (auto it = membs.cbegin(); it != membs.cend();) {
       it = std::find_if(it, membs.cend(), [](std::shared_ptr<const Memb> memb) {
@@ -175,7 +176,7 @@ struct Cls {
     return found;
   }
 
-  auto find_pattrs() const {
+  auto find_pattrs() const noexcept {
     std::vector<std::shared_ptr<const Attr>> found;
     for (auto it = attrs.cbegin(); it != attrs.cend();) {
       it = std::find_if(it, attrs.cend(), [](std::shared_ptr<const Attr> attr) {
@@ -216,7 +217,7 @@ struct Header {
   Header(const std::string& name)
       : name{name}, proper_name{get_proper_name(name)} {}
 
-  std::shared_ptr<Cls> find_cls(const std::string& name) {
+  std::shared_ptr<Cls> find_cls(const std::string& name) noexcept {
     std::string jname = just_name(name);
     auto it = std::find_if(
         classes.begin(), classes.end(),
@@ -224,7 +225,7 @@ struct Header {
     return it != classes.end() ? *it : nullptr;
   }
 
-  auto find_overloads(const std::string& name) {
+  auto find_overloads(const std::string& name) noexcept {
     std::vector<std::shared_ptr<Func>> found;
     for (auto it = funcs.begin(); it != funcs.end();) {
       it = std::find_if(it, funcs.end(),
@@ -236,7 +237,7 @@ struct Header {
     return found;
   }
 
-  static std::string get_proper_name(std::string name) {
+  static std::string get_proper_name(std::string name) noexcept {
     std::replace(name.begin(), name.end(), '/', '_');
     return name;
   }

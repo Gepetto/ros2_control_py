@@ -1,6 +1,8 @@
 #pragma once
 
 // hpp
+#include <algorithm>
+
 #include "write.hpp"
 
 /// @brief output a `Cls` to write an hpp
@@ -65,14 +67,18 @@ inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
   for (const Ctor& ctor : ctors)
     os << "\n      .def(py::init<" << Sep{ctor.args, ", "} << ">())";
   for (const Memb& memb : ptr_iter(cls.membs)) {
-    if (memb.is_overloaded)
+    if (memb.is_overloaded) {
+      std::vector<std::string> args_names{memb.args_names};
+      for (std::size_t i = 0; i < args_names.size(); ++i)
+        if (memb.args_type[i].find("std::unique_ptr") != std::string::npos)
+          args_names[i] = "std::move(" + memb.args_names[i] + ")";
       os << "\n      .def(\"" << memb.name << "\", []("
          << (memb.is_public ? (cls.is_outsider ? cls.complete_name : cls.name)
                             : cls.pub_name)
          << "& py_self" << (memb.args.empty() ? "" : ", ")
          << Sep{memb.args, ", "} << ") { return py_self." << memb.name << '('
-         << Sep{memb.args_names, ", "} << "); })";
-    else
+         << Sep{args_names, ", "} << "); })";
+    } else
       os << "\n      .def(\"" << memb.name << "\", &"
          << (memb.is_public ? (cls.is_outsider ? cls.complete_name : cls.name)
                             : cls.pub_name)

@@ -211,7 +211,7 @@ inline void parse_class(Header& header, CppConstCompoundEPtr cls,
     }
     CppConstFunctionEPtr memb = obj_memb;
     if (memb && memb->name_.find("operator") == std::string::npos &&
-        memb->name_ != "get_full_name" && memb->name_ != "import_component") {
+        memb->name_ != "get_full_name") {
       parse_class_memb(*cls_rep, memb);
       continue;
     }

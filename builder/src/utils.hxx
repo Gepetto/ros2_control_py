@@ -1,6 +1,7 @@
 #pragma once
 
 // hpp
+#include "cppast.h"
 #include "utils.hpp"
 
 // STL
@@ -95,6 +96,10 @@ inline std::string str_of_cpp(const CppObj* cppObj) {
     if (type == "double") return "Ref<" + type + ">";
   }
   return str;
+}
+
+inline std::string str_of_cpp(const CppObjPtr& cppObjPtr) {
+  return str_of_cpp(cppObjPtr.get());
 }
 
 inline std::string to_upper(std::string str) {

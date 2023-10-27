@@ -32,6 +32,8 @@ inline CppCompoundPtr parse_file(CppParser& parser,
                                  const std::string& filename);
 /// @brief wrapper to get a string repr of a CppObj
 inline std::string str_of_cpp(const CppObj* cppObj);
+/// @brief wrapper to get a string repr of a CppObj
+inline std::string str_of_cpp(const CppObjPtr& cppObjPtr);
 /// @brief std::string to UPPER
 inline std::string to_upper(std::string_view str);
 /// @brief std::string_view to PascalCase

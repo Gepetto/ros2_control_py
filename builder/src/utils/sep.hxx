@@ -3,24 +3,50 @@
 // hpp
 #include "sep.hpp"
 
-template <typename T, typename U>
-class Sep {
- public:
-  Sep(const T& iterable, const U& separator)
-      : iterable_{iterable}, separator_{separator} {}
+// STL
+#include <iterator>
+#include <type_traits>
+#include <utility>
 
-  friend std::ostream& operator<< <>(std::ostream&, const Sep<T, U>&);
+struct identity {
+  using is_transparent = std::true_type;
 
- private:
-  const T& iterable_;
-  const U& separator_;
+  template <class T>
+  constexpr T&& operator()(T&& t) const noexcept {
+    return std::forward<T>(t);
+  }
 };
 
-template <typename T, typename U>
-std::ostream& operator<<(std::ostream& os, const Sep<T, U>& sep) {
+template <typename Iterable, typename Separator, typename Projection = identity>
+class Sep {
+ public:
+  inline Sep(const Iterable& iterable,
+             const Separator& separator) noexcept(noexcept(Projection{}))
+      : iterable_{iterable}, separator_{separator}, projection_{} {}
+
+  inline Sep(const Iterable& iterable, const Separator& separator,
+             Projection projection) noexcept(noexcept(Projection{
+      std::move(std::declval<Projection>())}))
+      : iterable_{iterable},
+        separator_{separator},
+        projection_{std::move(projection)} {}
+
+  friend std::ostream& operator<< <>(
+      std::ostream&, const Sep<Iterable, Separator, Projection>&);
+
+ private:
+  const Iterable& iterable_;
+  const Separator& separator_;
+  Projection projection_;
+};
+
+template <typename Iterable, typename Separator, typename Projection>
+inline std::ostream& operator<<(
+    std::ostream& os, const Sep<Iterable, Separator, Projection>& sep) {
   auto it = std::begin(sep.iterable_);
   if (it == std::end(sep.iterable_)) return os;
-  os << *it;
-  for (++it; it != std::end(sep.iterable_); ++it) os << sep.separator_ << *it;
+  os << sep.projection_(*it);
+  for (++it; it != std::end(sep.iterable_); ++it)
+    os << sep.separator_ << sep.projection_(*it);
   return os;
 }
