@@ -1,0 +1,20 @@
+name: humble
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-humble:
+    runs-on: ubuntu-latest
+    container: ubuntu:jammy
+    steps:
+    - uses: ros-tooling/setup-ros@v0.7
+      with:
+        required-ros-distributions: humble
+    - uses: ros-tooling/action-ros-ci@v0.3
+      with:
+        package-name: ros2_control_py
+        target-ros2-distro: humble
