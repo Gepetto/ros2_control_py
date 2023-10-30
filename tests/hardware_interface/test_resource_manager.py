@@ -73,6 +73,12 @@ def EXPECT_NE(a, b):
     ASSERT_NE(a, b)
 
 
+def make_tuple(
+    status: "ros2_control_py.HardwareReadWriteStatus",
+) -> (bool, VectorString):
+    return status.ok, status.failed_hardware_names
+
+
 class TestableResourceManager(ResourceManager):
     __test__ = False
 
@@ -1377,7 +1383,7 @@ def test_managing_controllers_reference_interfaces():
         rm.make_controller_reference_interfaces_unavailable("unknown_controller")
 
 
-class TestResourceManagerReadWriteError:
+class ResourceManagerTestReadWriteError:
     def setup_method(self, method):
         self.rm = TestableResourceManager()
         self.claimed_itfs = []
@@ -1416,10 +1422,10 @@ class TestResourceManagerReadWriteError:
 
         self.check_if_interface_available(True, True)
         # with default values read and write should run without any problems
-        ok, failed_hardware_names = self.rm.read(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(self.rm.read(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
-        ok, failed_hardware_names = self.rm.write(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(self.rm.write(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1454,7 +1460,9 @@ class TestResourceManagerReadWriteError:
         # read failure for TEST_ACTUATOR_HARDWARE_NAME
         self.claimed_itfs[0].set_value(fail_value)
         self.claimed_itfs[1].set_value(fail_value - 10.0)
-        ok, failed_hardware_names = method_that_fails(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_fails(self.time, self.duration)
+        )
         EXPECT_FALSE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         ASSERT_EQ(failed_hardware_names, VectorString([TEST_ACTUATOR_HARDWARE_NAME]))
@@ -1480,7 +1488,7 @@ class TestResourceManagerReadWriteError:
         )
         self.check_if_interface_available(True, True)
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1488,7 +1496,9 @@ class TestResourceManagerReadWriteError:
         # read failure for TEST_SYSTEM_HARDWARE_NAME
         self.claimed_itfs[0].set_value(fail_value - 10.0)
         self.claimed_itfs[1].set_value(fail_value)
-        ok, failed_hardware_names = method_that_fails(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_fails(self.time, self.duration)
+        )
         EXPECT_FALSE(ok)
         EXPECT_NE(len(failed_hardware_names), 0)
         ASSERT_EQ(failed_hardware_names, VectorString([TEST_SYSTEM_HARDWARE_NAME]))
@@ -1514,7 +1524,7 @@ class TestResourceManagerReadWriteError:
         )
         self.check_if_interface_available(True, True)
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1522,7 +1532,9 @@ class TestResourceManagerReadWriteError:
         # read failure for both, TEST_ACTUATOR_HARDWARE_NAME and TEST_SYSTEM_HARDWARE_NAME
         self.claimed_itfs[0].set_value(fail_value)
         self.claimed_itfs[1].set_value(fail_value)
-        ok, failed_hardware_names = method_that_fails(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_fails(self.time, self.duration)
+        )
         EXPECT_FALSE(ok)
         EXPECT_NE(len(failed_hardware_names), 0)
         ASSERT_EQ(
@@ -1552,7 +1564,7 @@ class TestResourceManagerReadWriteError:
         )
         self.check_if_interface_available(True, True)
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1567,7 +1579,9 @@ class TestResourceManagerReadWriteError:
         self.claimed_itfs[0].set_value(deactivate_value)
         self.claimed_itfs[1].set_value(deactivate_value - 10.0)
         # deactivate on error
-        ok, failed_hardware_names = method_that_deactivates(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_deactivates(self.time, self.duration)
+        )
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         status_map = self.rm.get_components_status()
@@ -1595,7 +1609,7 @@ class TestResourceManagerReadWriteError:
         self.check_if_interface_available(True, True)
         del status_map
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1604,7 +1618,9 @@ class TestResourceManagerReadWriteError:
         self.claimed_itfs[0].set_value(deactivate_value - 10.0)
         self.claimed_itfs[1].set_value(deactivate_value)
         # deactivate on flag
-        ok, failed_hardware_names = method_that_deactivates(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_deactivates(self.time, self.duration)
+        )
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         status_map = self.rm.get_components_status()
@@ -1631,7 +1647,7 @@ class TestResourceManagerReadWriteError:
         self.check_if_interface_available(True, True)
         del status_map
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
@@ -1640,7 +1656,9 @@ class TestResourceManagerReadWriteError:
         self.claimed_itfs[0].set_value(deactivate_value)
         self.claimed_itfs[1].set_value(deactivate_value)
         # deactivate on flag
-        ok, failed_hardware_names = method_that_deactivates(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(
+            method_that_deactivates(self.time, self.duration)
+        )
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         status_map = self.rm.get_components_status()
@@ -1668,7 +1686,7 @@ class TestResourceManagerReadWriteError:
         self.check_if_interface_available(True, True)
         del status_map
         # write is sill OK
-        ok, failed_hardware_names = other_method(self.time, self.duration)
+        ok, failed_hardware_names = make_tuple(other_method(self.time, self.duration))
         EXPECT_TRUE(ok)
         EXPECT_EQ(len(failed_hardware_names), 0)
         self.check_if_interface_available(True, True)
