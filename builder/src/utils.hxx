@@ -8,7 +8,9 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
+#include <string>
 // CppParser
 #include <cppwriter.h>
 
@@ -54,6 +56,21 @@ inline void remove_attributes(std::string& contents) {
     *(mit - 2) = '"';  // replpace R with "
     mit = contents.erase(
         mit - 1, contents.cbegin() + end + name.size() + 1);  // R|"name()name|"
+  }
+  // remove template non type arguments
+  it = contents.cbegin();
+  while (it != contents.cend()) {
+    const std::string template_str = "template";
+    const std::string typename_str = "typename";
+    std::size_t pos = contents.find(template_str, it - contents.cbegin());
+    if (pos == std::string::npos) break;
+    it = contents.cbegin() + (pos + template_str.size());
+    it = std::find(it, contents.cend(), '<');
+    if (it == contents.cend()) break;
+    ++it;
+    const auto matching_carret = find_matching(it, contents.cend(), '>');
+    if (matching_carret == contents.cend()) break;
+    it = contents.erase(it, matching_carret);
   }
 }
 
@@ -142,4 +159,51 @@ inline std::string just_name(std::string&& name) {
   auto it = std::search_n(name.crbegin(), name.crend(), 2, ':');
   if (it != name.crend()) name.erase(name.cbegin(), it.base());
   return name;
+}
+
+template <typename It>
+It find_matching(It begin, It end, char value) {
+  std::size_t parens = 0;
+  std::size_t brackets = 0;
+  std::size_t braces = 0;
+  std::size_t carrets = 0;
+  const auto all_zero = [&]() {
+    return !parens && !brackets && !braces && !carrets;
+  };
+  for (auto it = begin; it != end; ++it) {
+    if (all_zero() && *it == value) return it;
+    switch (*it) {
+      case '(':
+        ++parens;
+        break;
+      case ')':
+        if (parens == 0) return end;
+        --parens;
+        break;
+      case '[':
+        ++brackets;
+        break;
+      case ']':
+        if (brackets == 0) return end;
+        --brackets;
+        break;
+      case '{':
+        ++braces;
+        break;
+      case '}':
+        if (braces == 0) return end;
+        --braces;
+        break;
+      case '<':
+        ++carrets;
+        break;
+      case '>':
+        if (carrets == 0) return end;
+        --carrets;
+        break;
+      default:
+        break;
+    }
+  }
+  return end;
 }
