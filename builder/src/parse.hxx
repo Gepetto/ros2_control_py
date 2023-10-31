@@ -91,6 +91,19 @@ inline void parse_class_attr(Header& header, Cls& cls, CppConstVarEPtr attr) {
   if (type_name.find("std::vector<") != std::string::npos &&
       (type_name.find("CommandInterface") != std::string::npos ||
        type_name.find("StateInterface") != std::string::npos)) {
+    std::cerr << "warning: class " << cls.name
+              << " skipped vector of non assignable attr " << attr->name()
+              << std::endl;
+    return;
+  }
+  if (type_name.find("std::unique_ptr<") != std::string::npos) {
+    std::cerr << "warning: class " << cls.name << " skipped unique_ptr attr "
+              << attr->name() << std::endl;
+    return;
+  }
+  if (type_name.find("std::vector<") != std::string::npos &&
+      (type_name.find("CommandInterface") != std::string::npos ||
+       type_name.find("StateInterface") != std::string::npos)) {
     std::cerr << "warning: class " << cls.name << " skipped vector attr "
               << attr->name() << std::endl;
     return;
@@ -208,7 +221,7 @@ inline void parse_class(Header& header, CppConstCompoundEPtr cls,
   for (const CppObjPtr& obj_memb : cls->members()) {
     if (!isPublic(obj_memb) && !isProtected(obj_memb)) continue;
     CppConstVarEPtr attr = obj_memb;
-    if (attr) {
+    if (attr && (attr->typeAttr() & kStatic) == 0) {
       parse_class_attr(header, *cls_rep, attr);
       continue;
     }

@@ -9,8 +9,8 @@
 #include "utils.hpp"
 #include "write.hpp"
 
-/// @brief init py_utils header for modules
-StlBinderHeader init_py_utils(std::vector<std::shared_ptr<Module>>& mods);
+/// @brief init impl header for modules
+StlBinderHeader init_impl(std::vector<std::shared_ptr<Module>>& mods);
 /// @brief add module for rclcpp
 void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
                         const fs::path& inc_dir, const fs::path& src_dir);
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  StlBinderHeader stl_binder = init_py_utils(modules);
+  StlBinderHeader stl_binder = init_impl(modules);
   init_rclcpp_module(modules, inc_dir, src_dir);
   init_cls_mothers(modules);
   init_cls_vmembs(modules);
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-StlBinderHeader init_py_utils(std::vector<std::shared_ptr<Module>>& mods) {
+StlBinderHeader init_impl(std::vector<std::shared_ptr<Module>>& mods) {
   StlBinderHeader stl_binder;
   for (Module& mod : ptr_iter(mods)) {
     for (Header& header : ptr_iter(mod.headers)) {
@@ -137,28 +137,72 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
   Cls& state = *rclcpp.classes.emplace_back(
       new Cls{rclcpp, "rclcpp_lifecycle", "State", "", nullptr});
   state.ctors = {{{}}, {{"uint8_t", "const std::string&"}}};
-  state.membs = {std::shared_ptr<Memb>(new Memb{"id",
-                                                state.complete_name,
-                                                "uint8_t",
-                                                {},
-                                                {},
-                                                {},
-                                                true,
-                                                false,
-                                                false,
-                                                false,
-                                                true}),
-                 std::shared_ptr<Memb>(new Memb{"label",
-                                                state.complete_name,
-                                                "std::string",
-                                                {},
-                                                {},
-                                                {},
-                                                true,
-                                                false,
-                                                false,
-                                                false,
-                                                true})};
+  state.membs = {
+      std::shared_ptr<Memb>(new Memb{"id",
+                                     state.complete_name,
+                                     "uint8_t",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     false,
+                                     false,
+                                     false,
+                                     true}),
+      std::shared_ptr<Memb>(new Memb{"label",
+                                     state.complete_name,
+                                     "std::string",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     false,
+                                     false,
+                                     false,
+                                     true}),
+  };
+  Cls& node = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp", "Node", "", nullptr});
+  node.ctors = {
+      {{"const std::string&", "const std::string&"}},
+      {{"const std::string&"}},
+  };
+  node.membs = {
+      std::shared_ptr<Memb>(new Memb{"get_name",
+                                     node.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     false,
+                                     false,
+                                     false,
+                                     true}),
+      std::shared_ptr<Memb>(new Memb{"get_namespace",
+                                     node.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     false,
+                                     false,
+                                     false,
+                                     true}),
+      std::shared_ptr<Memb>(new Memb{"now",
+                                     node.complete_name,
+                                     "rclcpp::Time",
+                                     {},
+                                     {},
+                                     {},
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true}),
+  };
+  node.is_shared_from_this = true;
   Enum& cbr =
       rclcpp.enums.emplace_back("LifecycleNodeInterface::CallbackReturn");
   cbr.items = {"SUCCESS", "FAILURE", "ERROR"};
@@ -216,6 +260,7 @@ void init_cls_vmembs(std::vector<std::shared_ptr<Module>>& mods) {
             continue;
           }
           cls.init = true;
+          cls.is_shared_from_this = cls.mother->is_shared_from_this;
           if (cls.using_mother_ctor) {
             for (const Ctor& ctor : cls.mother->ctors)
               if (std::find(cls.ctors.cbegin(), cls.ctors.cend(), ctor) ==

@@ -26,7 +26,7 @@ endif()
 set(_ros2_py_modules
   hardware_interface
   controller_interface
-  #controller_manager
+  controller_manager
   ros2_control_test_assets
 )
 

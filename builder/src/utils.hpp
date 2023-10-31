@@ -44,6 +44,9 @@ inline std::string make_pascal_name(const Args&... args);
 inline std::string just_name(const std::string& name);
 /// @brief remove everything before the last occcurence of `::` (in place)
 inline std::string just_name(std::string&& name);
+/// @brief find matching char on the same parenthesis level
+template <typename It>
+It find_matching(It begin, It end, char value);
 
 // utils/
 #include "utils/hash.hpp"

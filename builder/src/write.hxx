@@ -78,6 +78,9 @@ inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
                ? cls.mother->complete_name
                : cls.mother->name);
   if (cls.has_virtual) os << ", " << cls.tramp_name;
+  if (cls.is_shared_from_this)
+    os << ", std::shared_ptr<"
+       << (cls.is_outsider ? cls.complete_name : cls.name) << '>';
   os << ">(m, \"" << cls.name << "\")";
   std::vector<Ctor> ctors = cls.ctors;
   if (ctors.empty()) ctors.emplace_back(std::vector<std::string>{});
