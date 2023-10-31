@@ -110,7 +110,7 @@ struct Memb : public Func {
 struct Header;
 
 struct Cls {
-  Cls(Header& header, const std::string& ns, const std::string& name,
+  Cls(const Header& header, const std::string& ns, const std::string& name,
       const std::string& mother_name,
       std::shared_ptr<const Cls> mother = nullptr)
       : header{header},
@@ -187,7 +187,7 @@ struct Cls {
     return found;
   }
 
-  Header& header;
+  const Header& header;
   const std::string complete_name;
   const std::string name;
   const std::string tramp_name;
@@ -213,9 +213,11 @@ struct Enum {
   std::vector<std::string> items{};
 };
 
+struct Module;
+
 struct Header {
-  Header(const std::string& name)
-      : name{name}, proper_name{get_proper_name(name)} {}
+  Header(const Module& mod, const std::string& name)
+      : mod{mod}, name{name}, proper_name{get_proper_name(name)} {}
 
   std::shared_ptr<Cls> find_cls(const std::string& name) noexcept {
     std::string jname = just_name(name);
@@ -242,6 +244,14 @@ struct Header {
     return name;
   }
 
+  friend inline bool operator==(const Header& lhs, const Header& rhs) noexcept {
+    return &lhs == &rhs;
+  }
+  friend inline bool operator!=(const Header& lhs, const Header& rhs) noexcept {
+    return !(lhs == rhs);
+  }
+
+  const Module& mod;
   const std::string name;
   const std::string proper_name;
   std::unordered_set<std::string> namespaces{};
@@ -256,12 +266,20 @@ struct Header {
 };
 
 struct Module {
-  Module(fs::path inc_dir, fs::path src_dir, const std::string& name)
+  Module(fs::path inc_dir, fs::path src_dir, const std::string& name,
+         bool py_utils = true)
       : inc_dir{inc_dir / name},
         src_dir{src_dir / name},
         src{src_dir / (name + "_py.cpp")},
         name{name},
-        py_utils{new Header{"py_utils"}} {}
+        py_utils{py_utils ? new Header{*this, "py_utils"} : nullptr} {}
+
+  friend inline bool operator==(const Module& lhs, const Module& rhs) noexcept {
+    return &lhs == &rhs;
+  }
+  friend inline bool operator!=(const Module& lhs, const Module& rhs) noexcept {
+    return !(lhs == rhs);
+  }
 
   const fs::path inc_dir;
   const fs::path src_dir;
@@ -269,4 +287,12 @@ struct Module {
   const std::string name;
   std::vector<std::shared_ptr<Header>> headers{};
   const std::shared_ptr<Header> py_utils;
+  mutable std::vector<std::string> required{};
+};
+
+struct StlBinderHeader {
+  std::unordered_set<std::string> namespaces{};
+  std::unordered_set<
+      std::tuple<std::string, std::string, std::string, std::string>>
+      stl_bind{};
 };

@@ -1,14 +1,13 @@
 #pragma once
 
 // STL
+#include <filesystem>
 #include <iostream>
 #include <string>
-// boost
-#include <boost/filesystem.hpp>
 // CppParser
 #include <cppparser.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 /// @brief if not `Assert` print the other args and exit failure
 #define ASSERT(Assert, ...)                \

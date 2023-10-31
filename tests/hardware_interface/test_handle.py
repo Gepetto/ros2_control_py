@@ -1,8 +1,8 @@
 from ros2_control_py.hardware_interface import (
     CommandInterface,
     StateInterface,
-    FloatRef,
 )
+from ros2_control_py.rclcpp import FloatRef
 import pytest
 
 JOINT_NAME = "joint_1"

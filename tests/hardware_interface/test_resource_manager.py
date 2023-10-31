@@ -24,11 +24,13 @@ from ros2_control_py.hardware_interface import (
     INACTIVE,
     FINALIZED,
     return_type,
+)
+from ros2_control_py.rclcpp import (
     State,
-    VectorString,
     Time,
     Duration,
     FloatRef,
+    VectorString,
 )
 from lifecycle_msgs import msg as lifecycle_msgs_msg
 import pytest

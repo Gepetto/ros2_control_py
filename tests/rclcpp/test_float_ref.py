@@ -1,4 +1,4 @@
-from ros2_control_py.hardware_interface import FloatRef
+from ros2_control_py.rclcpp import FloatRef
 from math import nan, inf, isnan
 
 
