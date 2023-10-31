@@ -113,11 +113,14 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
   Header& rclcpp =
       *rclcpp_mod.headers.emplace_back(new Header(rclcpp_mod, "rclcpp"));
   rclcpp.namespaces.insert("rclcpp");
+  rclcpp.namespaces.insert("rclcpp::node_interfaces");
+  rclcpp.namespaces.insert("rclcpp::executors");
   rclcpp.namespaces.insert("rclcpp_lifecycle");
   rclcpp.namespaces.insert("rclcpp_lifecycle::node_interfaces");
   Cls& lni = *rclcpp.classes.emplace_back(
       new Cls{rclcpp, "rclcpp_lifecycle::node_interfaces",
               "LifecycleNodeInterface", "", nullptr});
+  lni.has_virtual = true;
   const auto names = {"on_configure", "on_cleanup",    "on_shutdown",
                       "on_activate",  "on_deactivate", "on_error"};
   for (const auto& name : names)
@@ -133,7 +136,6 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
                  false,
                  false,
                  true});
-  lni.has_virtual = true;
   Cls& state = *rclcpp.classes.emplace_back(
       new Cls{rclcpp, "rclcpp_lifecycle", "State", "", nullptr});
   state.ctors = {{{}}, {{"uint8_t", "const std::string&"}}};
@@ -161,8 +163,65 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
                                      false,
                                      true}),
   };
+  Cls& node_base_interface = *rclcpp.classes.emplace_back(new Cls{
+      rclcpp, "rclcpp::node_interfaces", "NodeBaseInterface", "", nullptr});
+  node_base_interface.has_virtual = true;
+  node_base_interface.has_no_ctor = true;
+  node_base_interface.membs = {
+      std::shared_ptr<Memb>(new Memb{"get_name",
+                                     node_base_interface.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     true,
+                                     true,
+                                     false,
+                                     true}),
+      std::shared_ptr<Memb>(new Memb{"get_namespace",
+                                     node_base_interface.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     true,
+                                     true,
+                                     false,
+                                     true}),
+  };
+  Cls& node_base = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp::node_interfaces", "NodeBase", "", nullptr});
+  node_base.has_no_ctor = true;
+  node_base.is_shared_from_this = true;
+  node_base.membs = {
+      std::shared_ptr<Memb>(new Memb{"get_name",
+                                     node_base.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     true,
+                                     false,
+                                     false,
+                                     true}),
+      std::shared_ptr<Memb>(new Memb{"get_namespace",
+                                     node_base.complete_name,
+                                     "const char*",
+                                     {},
+                                     {},
+                                     {},
+                                     true,
+                                     true,
+                                     false,
+                                     false,
+                                     true}),
+  };
   Cls& node = *rclcpp.classes.emplace_back(
       new Cls{rclcpp, "rclcpp", "Node", "", nullptr});
+  node.is_shared_from_this = true;
   node.ctors = {
       {{"const std::string&", "const std::string&"}},
       {{"const std::string&"}},
@@ -202,7 +261,122 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
                                      false,
                                      true}),
   };
-  node.is_shared_from_this = true;
+  Cls& executor = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp", "Executor", "", nullptr});
+  executor.has_virtual = true;
+  executor.has_no_ctor = true;
+  executor.membs = {
+      std::shared_ptr<Memb>{new Memb{"spin",
+                                     executor.complete_name,
+                                     "void",
+                                     {},
+                                     {},
+                                     {},
+                                     false,
+                                     true,
+                                     true,
+                                     false,
+                                     true}},
+      std::shared_ptr<Memb>{new Memb{
+          "add_node",
+          executor.complete_name,
+          "void",
+          {"rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr",
+           "bool notify"},
+          {"rclcpp::node_interfaces::NodeBaseInterface::SharedPtr", "bool"},
+          {"node_ptr", "notify"},
+          false,
+          true,
+          false,
+          false,
+          true}},
+      std::shared_ptr<Memb>{new Memb{
+          "add_node",
+          executor.complete_name,
+          "void",
+          {"rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr"},
+          {"rclcpp::node_interfaces::NodeBaseInterface::SharedPtr"},
+          {"node_ptr"},
+          false,
+          false,
+          false,
+          false,
+          true}},
+      std::shared_ptr<Memb>{
+          new Memb{"add_node",
+                   executor.complete_name,
+                   "void",
+                   {"std::shared_ptr<rclcpp::Node> node_ptr", "bool notify"},
+                   {"std::shared_ptr<rclcpp::Node>", "bool"},
+                   {"node_ptr", "notify"},
+                   false,
+                   true,
+                   false,
+                   false,
+                   true}},
+      std::shared_ptr<Memb>{new Memb{"add_node",
+                                     executor.complete_name,
+                                     "void",
+                                     {"std::shared_ptr<rclcpp::Node> node_ptr"},
+                                     {"std::shared_ptr<rclcpp::Node>"},
+                                     {"node_ptr"},
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true}},
+  };
+  Cls& static_executor = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp::executors", "StaticSingleThreadedExecutor",
+              "Executor", nullptr});
+  static_executor.ctors = {{{}}};
+  static_executor.membs = {
+      std::shared_ptr<Memb>{new Memb{"spin_some",
+                                     static_executor.complete_name,
+                                     "void",
+                                     {},
+                                     {},
+                                     {},
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true}},
+  };
+  Cls& single_executor = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp::executors", "SingleThreadedExecutor", "Executor",
+              nullptr});
+  single_executor.ctors = {{{}}};
+  single_executor.membs = {
+      std::shared_ptr<Memb>{new Memb{"spin_some",
+                                     single_executor.complete_name,
+                                     "void",
+                                     {},
+                                     {},
+                                     {},
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true}},
+  };
+  Cls& multi_executor = *rclcpp.classes.emplace_back(
+      new Cls{rclcpp, "rclcpp::executors", "MultiThreadedExecutor", "Executor",
+              nullptr});
+  multi_executor.ctors = {{{}}};
+  multi_executor.membs = {
+      std::shared_ptr<Memb>{new Memb{"spin_some",
+                                     multi_executor.complete_name,
+                                     "void",
+                                     {},
+                                     {},
+                                     {},
+                                     false,
+                                     false,
+                                     false,
+                                     false,
+                                     true}},
+  };
   Enum& cbr =
       rclcpp.enums.emplace_back("LifecycleNodeInterface::CallbackReturn");
   cbr.items = {"SUCCESS", "FAILURE", "ERROR"};
