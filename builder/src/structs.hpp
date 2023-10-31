@@ -205,6 +205,7 @@ struct Cls {
   bool has_protected{false};
   bool is_outsider{false};
   bool is_shared_from_this{false};
+  bool has_no_ctor{false};
 };
 
 struct Enum {

@@ -83,7 +83,8 @@ inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
        << (cls.is_outsider ? cls.complete_name : cls.name) << '>';
   os << ">(m, \"" << cls.name << "\")";
   std::vector<Ctor> ctors = cls.ctors;
-  if (ctors.empty()) ctors.emplace_back(std::vector<std::string>{});
+  if (ctors.empty() && !cls.has_no_ctor)
+    ctors.emplace_back(std::vector<std::string>{});
   for (const Ctor& ctor : ctors)
     os << "\n      .def(py::init<" << Sep{ctor.args, ", "} << ">())";
   for (const Memb& memb : ptr_iter(cls.membs)) {
@@ -168,6 +169,8 @@ void write_module_header(const Module& mod, const Header& header) {
         << "// impl_ros2_control_py\n#include <impl_ros2_control_py.hpp>\n";
   else
     ofs << "// rclcpp\n#include <rclcpp/rclcpp.hpp>\n#include "
+           "<rclcpp/node_interfaces/node_base.hpp>\n#include "
+           "<rclcpp/executors.hpp>\n#include "
            "<rclcpp_lifecycle/lifecycle_node.hpp>\n";
   if (mod.name == "rclcpp" && header.name == "py_ref") {
     ofs << R"(
