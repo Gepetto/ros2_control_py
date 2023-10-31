@@ -62,6 +62,8 @@ add_custom_target(run_builder
   DEPENDS ${_ros2_py_src}
 )
 
+# Create ros2_control_py/ dir in build/
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME})
 # pybind11 impl
 set(_ros2_py_impl _impl_${PROJECT_NAME})
 pybind11_add_module(${_ros2_py_impl}
