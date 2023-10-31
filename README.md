@@ -1,10 +1,11 @@
 # Python bindings for ros2_control using pybind11
 
--------------------------------------------------
+[![ros2_control_py humble](https://github.com/Gepetto/ros2_control_py/actions/workflows/humble.yml/badge.svg?branch=main)](https://github.com/Gepetto/ros2_control_py/actions/workflows/humble.yml?query=branch%3Amain)
+[![ros2_control_py rolling](https://github.com/Gepetto/ros2_control_py/actions/workflows/rolling.yml/badge.svg?branch=main)](https://github.com/Gepetto/ros2_control_py/actions/workflows/rolling.yml?query=branch%3Amain)
 
 ## Install
 
-Assuming that your [ros2_control](https://github.com/ros-controls/ros2_control) workspace is in the directory `~/ros2_control_py_ws`:
+Assuming that your ros2_control_py workspace is in the directory `~/ros2_control_py_ws`:
 
 ```sh
 mkdir -p ~/ros2_control_py_ws/src
