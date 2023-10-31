@@ -17,9 +17,10 @@
 inline void find_stl(Header& header, const std::string& type_name,
                      const std::string& type, const std::string& cpp_type);
 inline void find_stls(Header& header, const std::string& type_name);
-inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr);
-inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor);
-inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb);
+inline void parse_class_attr(Header& header, Cls& cls, CppConstVarEPtr attr);
+inline void parse_class_ctor(Header& header, Cls& cls, CppConstructorEPtr ctor);
+inline void parse_class_memb(Header& header, Cls& cls,
+                             CppConstFunctionEPtr memb);
 inline void parse_class_using(Cls& cls);
 inline void parse_class(Header& header, CppConstCompoundEPtr cls,
                         const std::string& ns);
@@ -38,7 +39,7 @@ inline void parse_header(Module& mod, fs::path path, const std::string& name) {
   parser.addIgnorableMacro(upper_name + "_IMPORT");
 
   mod.headers.emplace_back(
-      std::make_shared<Header>(name.substr(0, name.rfind('.'))));
+      std::make_shared<Header>(mod, name.substr(0, name.rfind('.'))));
 
   const CppCompoundPtr ast = parse_file(parser, path.string());
   ASSERT(ast, "Could not parse " << path);
@@ -75,7 +76,7 @@ inline void find_stls(Header& header, const std::string& type_name) {
   find_stl(header, type_name, "map", "multimap");
 }
 
-inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr) {
+inline void parse_class_attr(Header& header, Cls& cls, CppConstVarEPtr attr) {
   if (attr->templateParamList()) {
     std::cerr << "warning: class " << cls.name << " skipped template attr "
               << attr->name() << std::endl;
@@ -94,12 +95,13 @@ inline void parse_class_attr(Cls& cls, CppConstVarEPtr attr) {
               << attr->name() << std::endl;
     return;
   }
-  find_stls(cls.header, type_name);
+  find_stls(header, type_name);
   cls.attrs.emplace_back(std::make_shared<Attr>(attr->name(), isPublic(attr)));
   if (!cls.attrs.back()->is_public) cls.has_protected = true;
 }
 
-inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor) {
+inline void parse_class_ctor(Header& header, Cls& cls,
+                             CppConstructorEPtr ctor) {
   if (ctor->templateParamList()) {
     std::cerr << "warning: class " << cls.name << " skipped template ctor"
               << std::endl;
@@ -115,7 +117,7 @@ inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor) {
       ASSERT(var, "that was not a var");
       if (var->assignValue()) ++defaulted;
       std::string const arg = str_of_cpp(var->varType());
-      find_stls(cls.header, arg);
+      find_stls(header, arg);
       if (arg == "Deleter&&") {
         valid = false;
         break;
@@ -131,14 +133,15 @@ inline void parse_class_ctor(Cls& cls, CppConstructorEPtr ctor) {
   cls.ctors.emplace_back(std::move(args));
 }
 
-inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb) {
+inline void parse_class_memb(Header& header, Cls& cls,
+                             CppConstFunctionEPtr memb) {
   if (memb->templateParamList()) {
     std::cerr << "warning: class " << cls.name << " skipped template member "
               << memb->name_ << std::endl;
     return;
   }
   std::string const ret_type = str_of_cpp(memb->retType_.get());
-  find_stls(cls.header, ret_type);
+  find_stls(header, ret_type);
   std::vector<std::string> args;
   std::vector<std::string> args_type;
   std::vector<std::string> args_names;
@@ -160,7 +163,7 @@ inline void parse_class_memb(Cls& cls, CppConstFunctionEPtr memb) {
         return;
       }
       std::string type = str_of_cpp(var->varType());
-      find_stls(cls.header, type);
+      find_stls(header, type);
       std::string name =
           !var->name().empty() ? var->name() : "arg" + std::to_string(i++);
       args.emplace_back(type + " " + name);
@@ -206,19 +209,19 @@ inline void parse_class(Header& header, CppConstCompoundEPtr cls,
     if (!isPublic(obj_memb) && !isProtected(obj_memb)) continue;
     CppConstVarEPtr attr = obj_memb;
     if (attr) {
-      parse_class_attr(*cls_rep, attr);
+      parse_class_attr(header, *cls_rep, attr);
       continue;
     }
     CppConstFunctionEPtr memb = obj_memb;
     if (memb && memb->name_.find("operator") == std::string::npos &&
         memb->name_ != "get_full_name") {
-      parse_class_memb(*cls_rep, memb);
+      parse_class_memb(header, *cls_rep, memb);
       continue;
     }
     if (!isPublic(obj_memb)) continue;
     CppConstructorEPtr ctor = obj_memb;
     if (ctor && !ctor->isCopyConstructor() && !ctor->isMoveConstructor()) {
-      parse_class_ctor(*cls_rep, ctor);
+      parse_class_ctor(header, *cls_rep, ctor);
       continue;
     }
     CppConstUsingDeclEPtr use = obj_memb;

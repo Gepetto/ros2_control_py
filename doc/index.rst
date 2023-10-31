@@ -20,13 +20,26 @@ hardware_interface
 * StateInterface / CommandInterface (see FloatRef_ and FloatRefProp_)
 * Actuator / Sensor / System
 * ActuatorInterface / SensorInterface / SystemInterface
+
+rclcpp
+------
+
 * FloatRef_
 
 New Interface
 =============
 
-hardware_interface
-------------------
+rclcpp
+------
+
+| Because rclpy and rclcpp are bindings over rclc and the fact that ros2 control is written over rclcpp and not rclc,
+| We need to provide some bindings over rclcpp and rclcpp_lifecycle for this to work.
+
+* Time / Duration
+* State
+* LifecycleNodeInterface / CallbackReturn
+* FloatRef_ / FloatRefProp_
+* VectorString / VectorDouble (see StlBindings_)
 
 .. _FloatRef:
 
@@ -46,7 +59,8 @@ Usage:
 
 .. code:: python
 
-	from ros2_control_py.hardware_interface import FloatRef, CommandInterface, HW_IF_VELOCITY
+	from ros2_control_py.hardware_interface import CommandInterface, HW_IF_VELOCITY
+	from ros2_control_py.rclcpp import FloatRef
 	fr = FloatRef(5)
 	assert fr == 5
 	fr += 3
@@ -75,7 +89,8 @@ Usage:
 
 .. code:: python
 
-	from ros2_control_py.hardware_interface import FloatRefProp, CommandInterface, HW_IF_VELOCITY
+	from ros2_control_py.hardware_interface import CommandInterface, HW_IF_VELOCITY
+	from ros2_control_py.rclcpp import FloatRefProp
 	class Dummy:
 		fr = FloatRefProp(5)
 		def __init__(self):
@@ -92,3 +107,16 @@ Usage:
 	assert d.ci.get_value() == 4
 	d.ci.set_value(5)
 	assert d.fr == 5
+
+.. _StlBindings:
+
+StlBindings
+^^^^^^^^^^^
+
+| When using stl containers (``std::vector``, ``std::map``, ``std::set``, etc...) in the python interface,
+| we need to use a specialized binding for changes to go both ways.
+| This is only needed for some cases, mainly containers of string/double,
+| In other cases use a simple list but beware: it will be copied/moved out when passes to a C++ interface
+| (For these types you cannot have a reference to the container but merely a copy).
+| All these bindings are located in the rclcpp module in PascaleCase.
+| (ex: ``std::vector<std::string>`` => ``VectorString``).
