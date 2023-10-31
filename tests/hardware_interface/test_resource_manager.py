@@ -195,10 +195,9 @@ def test_initialization_with_urdf_manual_validation():
 def test_initialization_with_wrong_urdf():
     # missing state keys
     with pytest.raises(Exception):
-        # TestableResourceManager(
-        #    ros2_control_test_assets.minimal_robot_missing_state_keys_urdf
-        # )
-        raise Exception("this test segfaults")
+        TestableResourceManager(
+            ros2_control_test_assets.minimal_robot_missing_state_keys_urdf
+        )
     # missing command keys
     with pytest.raises(Exception):
         TestableResourceManager(
