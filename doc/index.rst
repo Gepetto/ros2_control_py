@@ -8,6 +8,7 @@ Parsed Modules
 
 * hardware_interface
 * controller_interface
+* controller_manager
 * ros2_control_test_assets
 
 Tested Features
