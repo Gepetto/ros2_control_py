@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
-#include <iomanip>
 #include <sstream>
 #include <string>
 // CppParser
@@ -33,7 +32,7 @@ inline void remove_attributes(std::string& contents) {
     if (it == contents.cend() || !std::isdigit(*it)) continue;
     it = contents.erase(it - 1);
   }
-  // remove raw strings aka R"()"
+  // remove raw strings aka R"(...)"
   auto mit = contents.begin();
   while (mit != contents.end()) {
     mit = std::adjacent_find(mit, contents.end(), [](char a, char b) {
@@ -57,7 +56,7 @@ inline void remove_attributes(std::string& contents) {
     mit = contents.erase(
         mit - 1, contents.cbegin() + end + name.size() + 1);  // R|"name()name|"
   }
-  // remove template non type arguments
+  // remove template arguments aka template <...> to template <>
   it = contents.cbegin();
   while (it != contents.cend()) {
     const std::string template_str = "template";
