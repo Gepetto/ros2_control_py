@@ -16,12 +16,12 @@ namespace fs = std::filesystem;
     std::cerr << __VA_ARGS__ << std::endl; \
     std::exit(EXIT_FAILURE);               \
   } while (false)
-/// @brief if not fs::is_directori((Dir)) fails
+/// @brief if not fs::is_directory((Dir)) fails
 #define ASSERT_DIR(Dir) \
   ASSERT(fs::is_directory((Dir)), (Dir) << " is not a valid directory")
 
-/// @brief removes `[[.*]]` sequences from the string because the parser does
-/// not handle them well
+/// @brief removes `[[.*]]` sequences and a few others from the string because
+/// the parser does not handle them well
 inline void remove_attributes(std::string& contents);
 /// @brief same as readFile from CppParser but calls remove_attributes
 inline std::string read_file(const std::string& filename);
