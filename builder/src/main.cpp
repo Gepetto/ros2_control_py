@@ -265,6 +265,7 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
       new Cls{rclcpp, "rclcpp", "Executor", "", nullptr});
   executor.has_virtual = true;
   executor.has_no_ctor = true;
+  executor.is_shared_from_this = true;
   executor.membs = {
       std::shared_ptr<Memb>{new Memb{"spin",
                                      executor.complete_name,
@@ -329,7 +330,6 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
   Cls& static_executor = *rclcpp.classes.emplace_back(
       new Cls{rclcpp, "rclcpp::executors", "StaticSingleThreadedExecutor",
               "Executor", nullptr});
-  static_executor.ctors = {{{}}};
   static_executor.membs = {
       std::shared_ptr<Memb>{new Memb{"spin_some",
                                      static_executor.complete_name,
@@ -342,44 +342,89 @@ void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
                                      false,
                                      false,
                                      true}},
-  };
-  Cls& single_executor = *rclcpp.classes.emplace_back(
-      new Cls{rclcpp, "rclcpp::executors", "SingleThreadedExecutor", "Executor",
-              nullptr});
-  single_executor.ctors = {{{}}};
-  single_executor.membs = {
-      std::shared_ptr<Memb>{new Memb{"spin_some",
-                                     single_executor.complete_name,
-                                     "void",
-                                     {},
-                                     {},
-                                     {},
-                                     false,
-                                     false,
-                                     false,
-                                     false,
-                                     true}},
-  };
-  Cls& multi_executor = *rclcpp.classes.emplace_back(
-      new Cls{rclcpp, "rclcpp::executors", "MultiThreadedExecutor", "Executor",
-              nullptr});
-  multi_executor.ctors = {{{}}};
-  multi_executor.membs = {
-      std::shared_ptr<Memb>{new Memb{"spin_some",
-                                     multi_executor.complete_name,
-                                     "void",
-                                     {},
-                                     {},
-                                     {},
-                                     false,
-                                     false,
-                                     false,
-                                     false,
-                                     true}},
+      std::shared_ptr<Memb>{
+          new Memb{"spin_some",
+                   static_executor.complete_name,
+                   "void",
+                   {"std::int64_t max_duration"},
+                   {"std::int64_t"},
+                   {"max_duration"},
+                   false,
+                   "self.spin_some(std::chrono::nanoseconds(max_duration));"}},
+      std::shared_ptr<Memb>{
+          new Memb{"spin_some",
+                   static_executor.complete_name,
+                   "void",
+                   {"double max_duration"},
+                   {"double"},
+                   {"max_duration"},
+                   false,
+                   "self.spin_some(std::chrono::nanoseconds(static_cast<std::"
+                   "int64_t>(max_duration)));"}},
+      std::shared_ptr<Memb>{
+          new Memb{"spin_all",
+                   static_executor.complete_name,
+                   "void",
+                   {"std::int64_t max_duration"},
+                   {"std::int64_t"},
+                   {"max_duration"},
+                   false,
+                   "self.spin_all(std::chrono::nanoseconds(max_duration));"}},
+      std::shared_ptr<Memb>{
+          new Memb{"spin_all",
+                   static_executor.complete_name,
+                   "void",
+                   {"double max_duration"},
+                   {"double"},
+                   {"max_duration"},
+                   false,
+                   "self.spin_all(std::chrono::nanoseconds(static_cast<std::"
+                   "int64_t>(max_duration)));"}},
   };
   Enum& cbr =
       rclcpp.enums.emplace_back("LifecycleNodeInterface::CallbackReturn");
   cbr.items = {"SUCCESS", "FAILURE", "ERROR"};
+  rclcpp.funcs = {
+      std::shared_ptr<Func>{
+          new Func{"init", "void", {}, {}, {}, "rclcpp::init(0, nullptr);"}},
+      std::shared_ptr<Func>{new Func{"init",
+                                     "void",
+                                     {"std::vector<std::string>& argv"},
+                                     {"std::vector<std::string>&"},
+                                     {"argv"},
+                                     R"(
+    if (argv.empty()) {
+      rclcpp::init(0, nullptr);
+      return;
+    }
+    std::vector<const char*> vec(argv.size() + 1);
+    for (size_t i = 0; i < argv.size(); ++i)
+      vec[i] = argv[i].data();
+    vec[argv.size()] = nullptr;
+    rclcpp::init(argv.size(), vec.data());
+ )"}},
+      std::shared_ptr<Func>{new Func{"shutdown", "void", {}, {}, {}}},
+      std::shared_ptr<Func>{new Func{
+          "shutdown",
+          "void",
+          {"rclcpp::Context::SharedPtr context"},
+          {"rclcpp::Context::SharedPtr"},
+          {"context"},
+      }},
+      std::shared_ptr<Func>{new Func{
+          "shutdown",
+          "void",
+          {"rclcpp::Context::SharedPtr context", "const std::string& reason"},
+          {"rclcpp::Context::SharedPtr", "const std::string&"},
+          {"context", "reason"},
+      }},
+      std::shared_ptr<Func>{new Func{"ok", "bool", {}, {}, {}}},
+      std::shared_ptr<Func>{new Func{"ok",
+                                     "bool",
+                                     {"rclcpp::Context::SharedPtr context"},
+                                     {"rclcpp::Context::SharedPtr"},
+                                     {"context"}}},
+  };
   rclcpp_mod.headers.emplace_back(new Header(rclcpp_mod, "py_ref"));
 }
 

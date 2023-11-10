@@ -5,6 +5,7 @@
 
 // STL
 #include <iterator>
+#include <sstream>
 #include <type_traits>
 #include <utility>
 
@@ -30,6 +31,12 @@ class Sep {
       : iterable_{iterable},
         separator_{separator},
         projection_{std::move(projection)} {}
+
+  inline std::string str() const {
+    std::ostringstream oss;
+    oss << *this;
+    return std::move(oss).str();
+  }
 
   friend std::ostream& operator<< <>(
       std::ostream&, const Sep<Iterable, Separator, Projection>&);

@@ -238,8 +238,10 @@ inline void parse_class(Header& header, CppConstCompoundEPtr cls,
       continue;
     }
     CppConstUsingDeclEPtr use = obj_memb;
-    if (use && use->name_ == cls_rep->mother_just_name +
-                                 "::" + cls_rep->mother_just_name) {
+    if (use && cls_rep->name == "ActuatorHandle")
+      std::cerr << "ActuatorHandle using " << use->name_ << std::endl;
+    if (use && ends_with(use->name_, cls_rep->mother_just_name +
+                                         "::" + cls_rep->mother_just_name)) {
       parse_class_using(*cls_rep);
       continue;
     }
