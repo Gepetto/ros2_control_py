@@ -47,6 +47,10 @@ inline std::string just_name(std::string&& name);
 /// @brief find matching char on the same parenthesis level
 template <typename It>
 It find_matching(It begin, It end, char value);
+/// @brief returns true if a begins with b
+inline bool starts_with(std::string_view a, std::string_view b);
+/// @brief returns true if a ends with b
+inline bool ends_with(std::string_view a, std::string_view b);
 
 // utils/
 #include "utils/hash.hpp"

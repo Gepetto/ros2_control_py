@@ -88,19 +88,29 @@ inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
   for (const Ctor& ctor : ctors)
     os << "\n      .def(py::init<" << Sep{ctor.args, ", "} << ">())";
   for (const Memb& memb : ptr_iter(cls.membs)) {
-    if (memb.is_overloaded) {
+    if (memb.is_overloaded || !memb.code_override.empty()) {
       std::vector<std::string> args_names{memb.args_names};
       for (std::size_t i = 0; i < args_names.size(); ++i)
         if (memb.args_type[i].find("std::unique_ptr") != std::string::npos)
           args_names[i] = "std::move(" + memb.args_names[i] + ")";
-      os << "\n      .def(\"" << memb.name << "\", []("
-         << (memb.is_public ? (cls.is_outsider ? cls.complete_name : cls.name)
-                            : cls.pub_name)
-         << "& py_self" << (memb.args.empty() ? "" : ", ")
-         << Sep{memb.args, ", "} << ") { return py_self." << memb.name << '('
-         << Sep{args_names, ", "} << "); })";
+      os << "\n      .def" << (memb.is_static ? "_static" : "") << "(\""
+         << memb.name << "\", [](";
+      if (!memb.is_static) {
+        os << (memb.is_public ? (cls.is_outsider ? cls.complete_name : cls.name)
+                              : cls.pub_name)
+           << "& self";
+        if (!memb.args.empty()) os << ", ";
+      }
+      os << Sep{memb.args, ", "} << ") { ";
+      if (memb.code_override.empty())
+        os << "return self." << memb.name << '(' << Sep{args_names, ", "}
+           << ");";
+      else
+        os << memb.code_override;
+      os << " })";
     } else
-      os << "\n      .def(\"" << memb.name << "\", &"
+      os << "\n      .def" << (memb.is_static ? "_static" : "") << "(\""
+         << memb.name << "\", &"
          << (memb.is_public ? (cls.is_outsider ? cls.complete_name : cls.name)
                             : cls.pub_name)
          << "::" << memb.name << ")";
@@ -149,11 +159,15 @@ inline std::ostream& operator<<(std::ostream& os, const Var& var) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Func& func) {
-  if (func.is_overloaded)
-    return os << "\n      .def(\"" << func.name << "\", []("
-              << Sep{func.args, ", "} << ") { return " << func.name << '('
-              << Sep{func.args_names, ", "} << "); })";
-  return os << "  m.def(\"" << func.name << "\", &" << func.name << ");\n";
+  if (!func.is_overloaded && func.code_override.empty())
+    return os << "  m.def(\"" << func.name << "\", &" << func.name << ");\n";
+  os << "  m.def(\"" << func.name << "\", [](" << Sep{func.args, ", "}
+     << ") { ";
+  if (func.code_override.empty())
+    os << "return " << func.name << '(' << Sep{func.args_names, ", "} << ");";
+  else
+    os << func.code_override;
+  return os << " });\n";
 }
 
 void write_module_header(const Module& mod, const Header& header) {
@@ -259,7 +273,7 @@ namespace py = pybind11;
   }
   ofs << R"(
 inline void init_)"
-      << header.proper_name << R"((py::module &m)
+      << header.proper_name << R"(([[maybe_unused]] py::module &m)
 {
 )";
   if (mod.name == "rclcpp" && header.name == "py_ref") {

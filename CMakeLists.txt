@@ -24,10 +24,12 @@ endif()
 
 # ros2_control modules to parse
 set(_ros2_py_modules
-  hardware_interface
   controller_interface
   controller_manager
+  hardware_interface
+  joint_limits
   ros2_control_test_assets
+  transmission_interface
 )
 
 # ROS deps

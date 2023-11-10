@@ -206,3 +206,11 @@ It find_matching(It begin, It end, char value) {
   }
   return end;
 }
+
+inline bool starts_with(std::string_view a, std::string_view b) {
+  return a.size() >= b.size() && a.substr(0, b.size()) == b;
+}
+
+inline bool ends_with(std::string_view a, std::string_view b) {
+  return a.size() >= b.size() && a.substr(a.size() - b.size(), b.size()) == b;
+}

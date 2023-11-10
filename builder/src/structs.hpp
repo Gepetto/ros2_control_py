@@ -3,6 +3,7 @@
 // STL
 #include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 // ros2_control_py_builder
@@ -17,12 +18,14 @@ struct Var {
 struct Func {
   Func(const std::string& name, const std::string& ret_type,
        std::vector<std::string>&& args, std::vector<std::string>&& args_type,
-       std::vector<std::string>&& args_names)
+       std::vector<std::string>&& args_names,
+       std::string_view code_override = "")
       : name{name},
         ret_type{ret_type},
         args{std::move(args)},
         args_type{std::move(args_type)},
-        args_names{std::move(args_names)} {}
+        args_names{std::move(args_names)},
+        code_override(code_override) {}
 
   friend inline bool operator==(const Func& lhs, const Func& rhs) noexcept {
     return lhs.name == rhs.name && lhs.args_type == rhs.args_type;
@@ -36,6 +39,7 @@ struct Func {
   const std::vector<std::string> args;
   const std::vector<std::string> args_type;
   const std::vector<std::string> args_names;
+  const std::string code_override;
   bool is_overloaded{false};
 };
 
@@ -64,31 +68,55 @@ struct Memb : public Func {
                 const std::string& ret_type, std::vector<std::string>&& args,
                 std::vector<std::string>&& args_type,
                 std::vector<std::string>&& args_names, bool is_const,
-                bool is_virtual, bool is_pure, bool is_final, bool is_public)
-      : Func{name, ret_type, std::move(args), std::move(args_type),
-             std::move(args_names)},
+                bool is_virtual, bool is_pure, bool is_final, bool is_public,
+                bool is_static = false, std::string_view code_override = "")
+      : Func{name,
+             ret_type,
+             std::move(args),
+             std::move(args_type),
+             std::move(args_names),
+             code_override},
         cls{cls},
         is_const{is_const},
         is_virtual{is_virtual},
         is_pure{is_pure},
         is_final{is_final},
-        is_public{is_public} {}
+        is_public{is_public},
+        is_static{is_static} {}
+
+  explicit Memb(const std::string& name, const std::string& cls,
+                const std::string& ret_type, std::vector<std::string>&& args,
+                std::vector<std::string>&& args_type,
+                std::vector<std::string>&& args_names, bool is_static,
+                std::string_view code_override)
+      : Func{name,
+             ret_type,
+             std::move(args),
+             std::move(args_type),
+             std::move(args_names),
+             code_override},
+        cls{cls},
+        is_const{false},
+        is_virtual{false},
+        is_pure{false},
+        is_final{false},
+        is_public{true},
+        is_static{is_static} {}
 
   inline Memb clone(const std::string& new_cls) const {
-    auto new_args = args;
-    auto new_args_type = args_type;
-    auto new_args_names = args_names;
     return Memb{name,
                 new_cls,
                 ret_type,
-                std::move(new_args),
-                std::move(new_args_type),
-                std::move(new_args_names),
+                std::vector<std::string>{args},
+                std::vector<std::string>{args_type},
+                std::vector<std::string>{args_names},
                 is_const,
                 is_virtual,
                 is_pure,
                 is_final,
-                is_public};
+                is_public,
+                is_static,
+                code_override};
   }
 
   friend inline bool operator==(const Memb& lhs, const Memb& rhs) noexcept {
@@ -105,6 +133,7 @@ struct Memb : public Func {
   const bool is_pure;
   const bool is_final;
   const bool is_public;
+  const bool is_static;
 };
 
 struct Header;
