@@ -3,13 +3,22 @@
 ros2_control_py
 ###############
 
+Doc for the python bindings of ros2 control.
+
+Page List
+=========
+
+* `Builder <builder.rst>`_: Internal documentation for the executable that parses C++ and outputs pybind11 bindings
+
 Parsed Modules
 ==============
 
-* hardware_interface
 * controller_interface
 * controller_manager
+* hardware_interface
+* joint_limits
 * ros2_control_test_assets
+* transmission_interface
 
 Tested Features
 ===============
@@ -21,6 +30,7 @@ hardware_interface
 * StateInterface / CommandInterface (see FloatRef_ and FloatRefProp_)
 * Actuator / Sensor / System
 * ActuatorInterface / SensorInterface / SystemInterface
+* ResourceManager
 
 rclcpp
 ------
@@ -36,9 +46,12 @@ rclcpp
 | Because rclpy and rclcpp are bindings over rclc and the fact that ros2 control is written over rclcpp and not rclc,
 | We need to provide some bindings over rclcpp and rclcpp_lifecycle for this to work.
 
+* init / shutdown / ok
 * Time / Duration
 * State
 * LifecycleNodeInterface / CallbackReturn
+* Node / NodeBase / NodeBaseInterface
+* Executor / StaticSingleThreadedExecutor
 * FloatRef_ / FloatRefProp_
 * VectorString / VectorDouble (see StlBindings_)
 
@@ -49,7 +62,7 @@ FloatRef
 
 | FloatRef is an owning reference to a ``double`` that behaves as a float-like object in Python.
 | In C++ it decays into a ``double`` or a ``double*`` for interfaces that require it.
-| It's purpose is to be used with StateInterface/CommandInterface.
+| It's purpose is to be used with StateInterface / CommandInterface.
 
 Warning:
 	| Although you can use assignment operators like +=,
