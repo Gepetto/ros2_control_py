@@ -37,7 +37,6 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(rclpy REQUIRED)
 # Python deps
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11_vendor REQUIRED)
@@ -81,7 +80,6 @@ target_include_directories(${_ros2_py_impl} PRIVATE
 ament_target_dependencies(${_ros2_py_impl} PUBLIC
   rclcpp
   rclcpp_lifecycle
-  rclpy
   ${_ros2_py_modules}
 )
 # __init__.py in build/ for tests
