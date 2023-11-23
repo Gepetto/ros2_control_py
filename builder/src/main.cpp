@@ -9,11 +9,18 @@
 #include "utils.hpp"
 #include "write.hpp"
 
+/// @brief parse AMENT_PREFIX_PATH to a vector<string_view>
+std::vector<fs::path> parse_ament_prefix_path(
+    std::string_view ament_prefix_path);
+/// @brief find module in path
+fs::path find_module(const std::vector<fs::path>& path, fs::path mod);
+
 /// @brief init impl header for modules
 StlBinderHeader init_impl(std::vector<std::shared_ptr<Module>>& mods);
 /// @brief add module for rclcpp
 void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
-                        const fs::path& inc_dir, const fs::path& src_dir);
+                        const std::vector<fs::path>& ament_prefix_path,
+                        const fs::path& src_dir);
 /// @brief find each classes' mother
 void init_cls_mothers(std::vector<std::shared_ptr<Module>>& mod);
 /// @brief inherit virtual members from parent
@@ -24,26 +31,31 @@ void init_overloads(std::vector<std::shared_ptr<Module>>& mod);
 void init_header_order(std::vector<std::shared_ptr<Module>>& mod);
 
 int main(int argc, char** argv) {
+  using namespace std::string_view_literals;
+
   ASSERT(argc > 4,
          "Invalid number of command line arguments, expected at least 4 got "
              << argc - 1);
 
   const fs::path src_dir = argv[1];
-  const fs::path inc_dir = argv[2];
+  const auto ament_prefix_path = parse_ament_prefix_path(argv[2]);
   const std::string ros_distro = argv[3];
 
   fs::create_directories(src_dir);
   ASSERT_DIR(src_dir);
-  ASSERT_DIR(inc_dir);
+  ASSERT(!ament_prefix_path.empty(), "empty $AMENT_PREFIX_PATH");
   ASSERT(ros_distro == "humble" || ros_distro == "rolling",
          "Unsupported ros distro " << ros_distro);
 
   const bool long_includes = ros_distro != "humble";
 
   std::vector<std::shared_ptr<Module>> modules;
-  for (int i = 4; i < argc; ++i)
+  for (int i = 4; i < argc; ++i) {
+    fs::path mod = argv[i];
+    if (long_includes || argv[i] == "rclcpp"sv) mod /= argv[i];
     modules.emplace_back(std::make_shared<Module>(
-        long_includes ? inc_dir / argv[i] : inc_dir, src_dir, argv[i]));
+        find_module(ament_prefix_path, mod.string()), src_dir, argv[i]));
+  }
 
   for (const Module& mod : ptr_iter(modules)) {
     fs::create_directories(mod.src_dir);
@@ -65,7 +77,7 @@ int main(int argc, char** argv) {
   }
 
   StlBinderHeader stl_binder = init_impl(modules);
-  init_rclcpp_module(modules, inc_dir, src_dir);
+  init_rclcpp_module(modules, ament_prefix_path, src_dir);
   init_cls_mothers(modules);
   init_cls_vmembs(modules);
   init_overloads(modules);
@@ -74,6 +86,35 @@ int main(int argc, char** argv) {
   write_impl(src_dir, modules, stl_binder);
 
   return 0;
+}
+
+std::vector<fs::path> parse_ament_prefix_path(
+    std::string_view ament_prefix_path) {
+  std::vector<fs::path> vec;
+  auto beg = ament_prefix_path.begin();
+  for (auto it = ament_prefix_path.begin(); it != ament_prefix_path.end();
+       ++it) {
+    it = std::find(it, ament_prefix_path.end(), ':');
+    if (it == beg) {
+      if (it == ament_prefix_path.end()) break;
+      beg = it + 1;
+      continue;
+    }
+    fs::path path{
+        ament_prefix_path.substr(beg - ament_prefix_path.begin(), it - beg)};
+    path /= "include";
+    if (fs::is_directory(path)) vec.emplace_back(path);
+    if (it == ament_prefix_path.end()) break;
+    beg = it + 1;
+  }
+  return vec;
+}
+
+fs::path find_module(const std::vector<fs::path>& path, fs::path mod) {
+  for (const fs::path& p : path)
+    if (fs::is_directory(p / mod)) return (p / mod).parent_path();
+  ASSERT(false, "could not find module " << mod.filename()
+                                         << " in $AMENT_PREFIX_PATH");
 }
 
 StlBinderHeader init_impl(std::vector<std::shared_ptr<Module>>& mods) {
@@ -106,10 +147,12 @@ StlBinderHeader init_impl(std::vector<std::shared_ptr<Module>>& mods) {
 }
 
 void init_rclcpp_module(std::vector<std::shared_ptr<Module>>& mod,
-                        const fs::path& inc_dir, const fs::path& src_dir) {
+                        const std::vector<fs::path>& ament_prefix_path,
+                        const fs::path& src_dir) {
   const std::string name = "rclcpp";
-  Module& rclcpp_mod = *mod.emplace_back(
-      std::make_shared<Module>(inc_dir / name, src_dir, name, false));
+  Module& rclcpp_mod = *mod.emplace_back(std::make_shared<Module>(
+      find_module(ament_prefix_path, fs::path{name} / name), src_dir, name,
+      false));
   Header& rclcpp =
       *rclcpp_mod.headers.emplace_back(new Header(rclcpp_mod, "rclcpp"));
   rclcpp.namespaces.insert("rclcpp");
