@@ -57,7 +57,7 @@ set(_ros2_py_src ${_ros2_py_src_dir}/impl_ros2_control_py.cpp)
 # calls builder
 add_custom_command(
   OUTPUT ${_ros2_py_src}
-  COMMAND builder "${_ros2_py_src_dir}" "/opt/ros/$ENV{ROS_DISTRO}/include" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
+  COMMAND builder "${_ros2_py_src_dir}" "$ENV{AMENT_PREFIX_PATH}" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
   DEPENDS builder
 )
 add_custom_target(run_builder
