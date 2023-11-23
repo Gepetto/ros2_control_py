@@ -22,7 +22,6 @@
 
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
-  <depend>rclpy</depend>
   <depend>controller_interface</depend>
   <depend>controller_manager</depend>
   <depend>controller_manager_msgs</depend>
