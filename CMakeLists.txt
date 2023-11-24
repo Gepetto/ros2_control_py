@@ -8,18 +8,9 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
-# Default to C11
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 11)
-endif()
+# Warnings for gcc/clang
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-# sanitize address gcc/clang
-if(SANITIZE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,undefined,leak")
-  set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address,undefined,leak")
 endif()
 
 # ros2_control modules to parse
@@ -56,7 +47,7 @@ set(_ros2_py_src ${_ros2_py_src_dir}/impl_ros2_control_py.cpp)
 # calls builder
 add_custom_command(
   OUTPUT ${_ros2_py_src}
-  COMMAND builder "${_ros2_py_src_dir}" "$ENV{AMENT_PREFIX_PATH}" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
+  COMMAND ${CMAKE_COMMAND} -E env "LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_LIST_DIR}/.lsan.supp" $<TARGET_FILE:builder> "${_ros2_py_src_dir}" "$ENV{AMENT_PREFIX_PATH}" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
   DEPENDS builder
 )
 add_custom_target(run_builder
@@ -73,6 +64,15 @@ pybind11_add_module(${_ros2_py_impl}
 set_target_properties(${_ros2_py_impl}
   PROPERTIES OUTPUT_NAME ${PROJECT_NAME}/${_ros2_py_impl}
 )
+# sanitize address gcc/clang
+if(SANITIZE)
+  target_compile_options(${_ros2_py_impl} PRIVATE
+    "-fsanitize=undefined"
+  )
+  target_link_options(${_ros2_py_impl} PRIVATE
+    "-fsanitize=undefined"
+  )
+endif()
 add_dependencies(${_ros2_py_impl} run_builder)
 target_include_directories(${_ros2_py_impl} PRIVATE
   ${_ros2_py_src_dir}
