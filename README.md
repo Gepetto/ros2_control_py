@@ -26,7 +26,7 @@ colcon build
 
 ```sh
 cd ~/ros2_control_py_ws
-colcon build --cmake-args ' -DCMAKE_BUILD_TYPE=Debug -DSANITIZE'
+colcon build --cmake-args ' -DCMAKE_BUILD_TYPE=Debug' ' -DSANITIZE=True'
 colcon test
 ```
 
