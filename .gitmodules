@@ -1,3 +1,3 @@
 [submodule "builder/cppparser"]
-	path = builder/cppparser
+	path = ros2_control_py_builder/builder/cppparser
 	url = https://github.com/Gepetto/cppparser

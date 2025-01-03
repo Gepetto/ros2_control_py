@@ -33,3 +33,11 @@ colcon test
 ## Usage
 
 See [doc](doc/index.rst) and [tests](tests/).
+
+## Developers
+
+### Rvalues
+
+To handles rvalues in LoanedStateInterface, the following blog post was used:
+https://stackoverflow.com/questions/49520017/unable-to-bind-rvalue-reference-arguments-in-member-function
+
