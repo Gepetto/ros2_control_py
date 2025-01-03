@@ -3,7 +3,7 @@
 <package format="3">
   <name>ros2_control_python</name>
   <version>0.0.2</version>
-  <description>Python binding for ros2_control</description>
+  <description>Python bindings for ros2_control</description>
 
   <maintainer email="olivier.stasse@laas.fr">Olivier Stasse</maintainer>
 
@@ -20,14 +20,7 @@
 
   <exec_depend>ament_index_python</exec_depend>
 
-  <depend>rclcpp</depend>
-  <depend>rclcpp_lifecycle</depend>
-  <depend>controller_interface</depend>
-  <depend>controller_manager</depend>
-  <depend>controller_manager_msgs</depend>
-  <depend>hardware_interface</depend>
-  <depend>joint_limits</depend>
-  <depend>transmission_interface</depend>
+  <depend>ros2_control_py</depend>
   <depend>ros2_control_py_builder</depend>
 
   <test_depend>ament_cmake_pytest</test_depend>
