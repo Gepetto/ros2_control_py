@@ -5,3 +5,4 @@ tmp
 install
 log
 __pycache__
+*~
