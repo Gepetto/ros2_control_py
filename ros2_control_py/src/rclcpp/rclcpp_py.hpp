@@ -8,6 +8,8 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
+#include "controller_manager/controller_manager_py.hpp"
+
 namespace ros2_control_py::bind_rclcpp
 {
 
@@ -258,7 +260,7 @@ inline void init_rclcpp([[maybe_unused]] py::module &m)
 
   py::class_<Executor, PyExecutor, std::shared_ptr<Executor>>(m, "Executor")
       .def("spin", &Executor::spin)
-      .def("add_node", [](Executor& self, rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr, bool notify) { return self.add_node(node_ptr, notify); })
+      .def("add_node", [](Executor& self, ros2_control_py::bind_controller_manager::ControllerManager::SharedPtr node_ptr, bool notify) { return self.add_node(node_ptr, notify); })
       .def("add_node", [](Executor& self, rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr) { return self.add_node(node_ptr); })
       .def("add_node", [](Executor& self, std::shared_ptr<rclcpp::Node> node_ptr, bool notify) { return self.add_node(node_ptr, notify); })
       .def("add_node", [](Executor& self, std::shared_ptr<rclcpp::Node> node_ptr) { return self.add_node(node_ptr); });
@@ -271,8 +273,10 @@ inline void init_rclcpp([[maybe_unused]] py::module &m)
       .def("spin_all", [](SingleThreadedExecutor& self, std::int64_t max_duration) { self.spin_all(std::chrono::nanoseconds(max_duration)); })
       .def("spin_all", [](SingleThreadedExecutor& self, double max_duration) { self.spin_all(std::chrono::nanoseconds(static_cast<std::int64_t>(max_duration))); })
       .def("spin", &SingleThreadedExecutor::spin)
+      .def("add_node", [](SingleThreadedExecutor& self, ros2_control_py::bind_controller_manager::ControllerManager::SharedPtr node_ptr) { return self.add_node(node_ptr); })      
       .def("add_node", [](SingleThreadedExecutor& self, rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr, bool notify) { return self.add_node(node_ptr, notify); })
-      .def("add_node", [](SingleThreadedExecutor& self, std::shared_ptr<rclcpp::Node> node_ptr, bool notify) { return self.add_node(node_ptr, notify); });
+      .def("add_node", [](SingleThreadedExecutor& self, std::shared_ptr<rclcpp::Node> node_ptr, bool notify) { return self.add_node(node_ptr, notify); })
+      ;
 }
 
 }
