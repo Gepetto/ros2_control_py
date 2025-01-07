@@ -8,14 +8,11 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_transmission_interface
-{
+namespace ros2_control_py::bind_transmission_interface {
 
 namespace py = pybind11;
 using namespace transmission_interface;
 
-inline void init_accessor([[maybe_unused]] py::module &m)
-{
-}
+inline void init_accessor([[maybe_unused]] py::module &m) {}
 
-}
+}  // namespace ros2_control_py::bind_transmission_interface

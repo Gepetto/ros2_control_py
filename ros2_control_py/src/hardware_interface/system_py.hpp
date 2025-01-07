@@ -8,14 +8,12 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_hardware_interface
-{
+namespace ros2_control_py::bind_hardware_interface {
 
 namespace py = pybind11;
 using namespace hardware_interface;
 
-inline void init_system([[maybe_unused]] py::module &m)
-{
+inline void init_system([[maybe_unused]] py::module &m) {
   py::class_<System>(m, "System")
       .def(py::init<>())
       .def(py::init<std::unique_ptr<SystemInterface>>())
@@ -36,4 +34,4 @@ inline void init_system([[maybe_unused]] py::module &m)
       .def("write", &System::write);
 }
 
-}
+}  // namespace ros2_control_py::bind_hardware_interface
