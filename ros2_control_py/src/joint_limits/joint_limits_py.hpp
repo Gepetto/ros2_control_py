@@ -8,14 +8,12 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_joint_limits
-{
+namespace ros2_control_py::bind_joint_limits {
 
 namespace py = pybind11;
 using namespace joint_limits;
 
-inline void init_joint_limits([[maybe_unused]] py::module &m)
-{
+inline void init_joint_limits([[maybe_unused]] py::module &m) {
   py::class_<JointLimits>(m, "JointLimits")
       .def(py::init<>())
       .def("to_string", &JointLimits::to_string)
@@ -27,7 +25,8 @@ inline void init_joint_limits([[maybe_unused]] py::module &m)
       .def_readwrite("max_effort", &JointLimits::max_effort)
       .def_readwrite("has_position_limits", &JointLimits::has_position_limits)
       .def_readwrite("has_velocity_limits", &JointLimits::has_velocity_limits)
-      .def_readwrite("has_acceleration_limits", &JointLimits::has_acceleration_limits)
+      .def_readwrite("has_acceleration_limits",
+                     &JointLimits::has_acceleration_limits)
       .def_readwrite("has_jerk_limits", &JointLimits::has_jerk_limits)
       .def_readwrite("has_effort_limits", &JointLimits::has_effort_limits)
       .def_readwrite("angle_wraparound", &JointLimits::angle_wraparound);
@@ -41,4 +40,4 @@ inline void init_joint_limits([[maybe_unused]] py::module &m)
       .def_readwrite("k_velocity", &SoftJointLimits::k_velocity);
 }
 
-}
+}  // namespace ros2_control_py::bind_joint_limits

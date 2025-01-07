@@ -8,14 +8,12 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_hardware_interface
-{
+namespace ros2_control_py::bind_hardware_interface {
 
 namespace py = pybind11;
 using namespace hardware_interface;
 
-inline void init_hardware_info([[maybe_unused]] py::module &m)
-{
+inline void init_hardware_info([[maybe_unused]] py::module &m) {
   py::class_<InterfaceInfo>(m, "InterfaceInfo")
       .def(py::init<>())
       .def_readwrite("name", &InterfaceInfo::name)
@@ -48,7 +46,8 @@ inline void init_hardware_info([[maybe_unused]] py::module &m)
       .def_readwrite("state_interfaces", &ActuatorInfo::state_interfaces)
       .def_readwrite("command_interfaces", &ActuatorInfo::command_interfaces)
       .def_readwrite("role", &ActuatorInfo::role)
-      .def_readwrite("mechanical_reduction", &ActuatorInfo::mechanical_reduction)
+      .def_readwrite("mechanical_reduction",
+                     &ActuatorInfo::mechanical_reduction)
       .def_readwrite("offset", &ActuatorInfo::offset);
 
   py::class_<TransmissionInfo>(m, "TransmissionInfo")
@@ -63,7 +62,8 @@ inline void init_hardware_info([[maybe_unused]] py::module &m)
       .def(py::init<>())
       .def_readwrite("name", &HardwareInfo::name)
       .def_readwrite("type", &HardwareInfo::type)
-      .def_readwrite("hardware_plugin_name", &HardwareInfo::hardware_plugin_name)
+      .def_readwrite("hardware_plugin_name",
+                     &HardwareInfo::hardware_plugin_name)
       .def_readwrite("hardware_parameters", &HardwareInfo::hardware_parameters)
       .def_readwrite("joints", &HardwareInfo::joints)
       .def_readwrite("sensors", &HardwareInfo::sensors)
@@ -72,4 +72,4 @@ inline void init_hardware_info([[maybe_unused]] py::module &m)
       .def_readwrite("original_xml", &HardwareInfo::original_xml);
 }
 
-}
+}  // namespace ros2_control_py::bind_hardware_interface

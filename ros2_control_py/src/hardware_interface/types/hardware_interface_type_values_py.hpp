@@ -8,14 +8,13 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_hardware_interface
-{
+namespace ros2_control_py::bind_hardware_interface {
 
 namespace py = pybind11;
 using namespace hardware_interface;
 
-inline void init_types_hardware_interface_type_values([[maybe_unused]] py::module &m)
-{
+inline void init_types_hardware_interface_type_values(
+    [[maybe_unused]] py::module &m) {
   m.attr("HW_IF_POSITION") = HW_IF_POSITION;
 
   m.attr("HW_IF_VELOCITY") = HW_IF_VELOCITY;
@@ -25,4 +24,4 @@ inline void init_types_hardware_interface_type_values([[maybe_unused]] py::modul
   m.attr("HW_IF_EFFORT") = HW_IF_EFFORT;
 }
 
-}
+}  // namespace ros2_control_py::bind_hardware_interface

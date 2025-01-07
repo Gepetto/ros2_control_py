@@ -8,14 +8,12 @@
 // impl_ros2_control_py
 #include <impl_ros2_control_py.hpp>
 
-namespace ros2_control_py::bind_hardware_interface
-{
+namespace ros2_control_py::bind_hardware_interface {
 
 namespace py = pybind11;
 using namespace hardware_interface;
 
-inline void init_actuator([[maybe_unused]] py::module &m)
-{
+inline void init_actuator([[maybe_unused]] py::module &m) {
   py::class_<Actuator>(m, "Actuator")
       .def(py::init<>())
       .def(py::init<std::unique_ptr<ActuatorInterface>>())
@@ -28,8 +26,10 @@ inline void init_actuator([[maybe_unused]] py::module &m)
       .def("error", &Actuator::error)
       .def("export_state_interfaces", &Actuator::export_state_interfaces)
       .def("export_command_interfaces", &Actuator::export_command_interfaces)
-      .def("prepare_command_mode_switch", &Actuator::prepare_command_mode_switch)
-      .def("perform_command_mode_switch", &Actuator::perform_command_mode_switch)
+      .def("prepare_command_mode_switch",
+           &Actuator::prepare_command_mode_switch)
+      .def("perform_command_mode_switch",
+           &Actuator::perform_command_mode_switch)
       .def("get_name", &Actuator::get_name)
       .def("get_group_name", &Actuator::get_group_name)
       .def("get_lifecycle_state", &Actuator::get_lifecycle_state)
@@ -37,4 +37,4 @@ inline void init_actuator([[maybe_unused]] py::module &m)
       .def("write", &Actuator::write);
 }
 
-}
+}  // namespace ros2_control_py::bind_hardware_interface
