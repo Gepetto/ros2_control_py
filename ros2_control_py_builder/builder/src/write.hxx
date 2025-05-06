@@ -43,14 +43,14 @@ void write_impl(const fs::path& src_dir,
   ofs << R"(
 namespace py = pybind11;
 
-PYBIND11_MODULE(_impl_ros2_control_py, r2cpy)
+NB_MODULE(_impl_ros2_control_py, r2cpy)
 {
   r2cpy.doc() = R"doc(
             Python bindings for ros2_control functionalities.
             )doc";
 
   // Provide custom function signatures
-  py::options options;
+  nb::options options;
   options.disable_function_signatures();
 
   // define submodules
@@ -71,7 +71,7 @@ PYBIND11_MODULE(_impl_ros2_control_py, r2cpy)
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
-  os << "  py::class_<" << (cls.is_outsider ? cls.complete_name : cls.name);
+  os << "  pnb::class_<" << (cls.is_outsider ? cls.complete_name : cls.name);
   if (cls.mother)
     os << ", "
        << (cls.mother->is_outsider || cls.header.mod != cls.mother->header.mod
@@ -79,14 +79,12 @@ inline std::ostream& operator<<(std::ostream& os, const Cls& cls) {
                : cls.mother->name);
   if (cls.has_virtual) os << ", " << cls.tramp_name;
   if (cls.is_shared_from_this)
-    os << ", std::shared_ptr<"
-       << (cls.is_outsider ? cls.complete_name : cls.name) << '>';
-  os << ">(m, \"" << cls.name << "\")";
+    os << ">(m, \"" << cls.name << "\")";
   std::vector<Ctor> ctors = cls.ctors;
   if (ctors.empty() && !cls.has_no_ctor)
     ctors.emplace_back(std::vector<std::string>{});
   for (const Ctor& ctor : ctors)
-    os << "\n      .def(py::init<" << Sep{ctor.args, ", "} << ">())";
+    os << "\n      .def(nb::init<" << Sep{ctor.args, ", "} << ">())";
   for (const Memb& memb : ptr_iter(cls.membs)) {
     if (memb.is_overloaded || !memb.code_override.empty()) {
       std::vector<std::string> args_names{memb.args_names};
@@ -131,7 +129,7 @@ inline std::ostream& operator<<(std::ostream& os, const Memb& memb) {
   return os << "\n  " << memb.ret_type << ' ' << memb.name << '('
             << Sep{memb.args, ", "} << ") " << (memb.is_const ? "const " : "")
             << R"(override {
-    PYBIND11_OVERRIDE)"
+    NB_OVERRIDE)"
             << (memb.is_pure ? "_PURE" : "") << R"((
         )" << memb.ret_type
             << R"(,
@@ -146,7 +144,7 @@ inline std::ostream& operator<<(std::ostream& os, const Memb& memb) {
 
 inline std::ostream& operator<<(std::ostream& os, const Enum& enu) {
   ASSERT(!enu.items.empty(), "empty enum");
-  os << "  py::enum_<" << enu.name << ">(m, \"" << just_name(enu.name)
+  os << "  nb::enum_<" << enu.name << ">(m, \"" << just_name(enu.name)
      << "\")\n";
   for (const std::string& item : enu.items)
     os << "      .value(\"" << item << "\", " << enu.name << "::" << item
@@ -273,12 +271,12 @@ namespace py = pybind11;
   }
   ofs << R"(
 inline void init_)"
-      << header.proper_name << R"(([[maybe_unused]] py::module &m)
+      << header.proper_name << R"(([[maybe_unused]] nb::module &m)
 {
 )";
   if (mod.name == "rclcpp" && header.name == "py_ref") {
-    ofs << R"(  py::class_<Ref<double>>(m, "FloatRef")
-      .def(py::init<double>())
+    ofs << R"(  nb::class_<Ref<double>>(m, "FloatRef")
+      .def(nb::init<double>())
       .def("__repr__", &Ref<double>::repr)
       .def("__float__", &Ref<double>::get_value)
       .def("get_value", &Ref<double>::get_value)
@@ -354,19 +352,19 @@ inline void init_)"
       .def("__rlt__", [](const Ref<double>& rhs, double lhs) { return lhs < *rhs; })
       .def("__rlt__", [](const Ref<double>& rhs, long long lhs) { return lhs < *rhs; });
 
-  py::class_<RefProp<double>>(m, "FloatRefProp")
+  nb::class_<RefProp<double>>(m, "FloatRefProp")
       .def(py::init<double>())
       .def("__get__", &RefProp<double>::get)
       .def("__set__", &RefProp<double>::set)
-      .def("__set__", [](RefProp<double>& py_self, py::object instance, long long value) { py_self.set(instance, value); })
-      .def("__set__", [](RefProp<double>& py_self, py::object instance, Ref<double> value) { py_self.set(instance, value); })
+      .def("__set__", [](RefProp<double>& py_self, nb::object instance, long long value) { py_self.set(instance, value); })
+      .def("__set__", [](RefProp<double>& py_self, nb::object instance, Ref<double> value) { py_self.set(instance, value); })
       .def("__delete__", &RefProp<double>::del);
 )";
   } else if (mod.name == "rclcpp" && header.name == "rclcpp") {
-    ofs << R"(  py::class_<Time>(m, "Time")
-      .def(py::init<>())
-      .def(py::init<uint32_t, uint32_t>())
-      .def(py::init<uint64_t>())
+    ofs << R"(  nb::class_<Time>(m, "Time")
+      .def(nb::init<>())
+      .def(nb::init<uint32_t, uint32_t>())
+      .def(nb::init<uint64_t>())
       .def("nanoseconds", &Time::nanoseconds)
       .def("__eq__", [](const Time& lhs, const Time& rhs) { return lhs == rhs; })
       .def("__ne__", [](const Time& lhs, const Time& rhs) { return lhs != rhs; })
@@ -378,8 +376,8 @@ inline void init_)"
       .def("__sub__", [](const Time& lhs, const Time& rhs) { return lhs - rhs; })
       .def("__sub__", [](const Time& lhs, const Duration& rhs) { return lhs - rhs; });
 
-  py::class_<Duration>(m, "Duration")
-      .def(py::init<uint32_t, uint32_t>())
+  nb::class_<Duration>(m, "Duration")
+      .def(nb::init<uint32_t, uint32_t>())
       .def("nanoseconds", &Duration::nanoseconds)
       .def("__eq__", [](const Duration& lhs, const Duration& rhs) { return lhs == rhs; })
       .def("__ne__", [](const Duration& lhs, const Duration& rhs) { return lhs != rhs; })
@@ -425,7 +423,7 @@ inline void write_impl_hpp(const fs::path& src_dir,
   ofs << R"(#include <rclcpp/py_ref_py.hpp>
 #include <rclcpp/rclcpp_py.hpp>
 
-namespace PYBIND11_NAMESPACE {
+namespace NB_NAMESPACE {
 namespace detail {
 )";
   for (const std::string& ns : stl_binder.namespaces)
@@ -433,15 +431,15 @@ namespace detail {
   ofs << "}\n}\n";
   if (!stl_binder.stl_bind.empty()) ofs << '\n';
   for (const auto& [type, cpp_type, u, v] : stl_binder.stl_bind)
-    ofs << "PYBIND11_MAKE_OPAQUE(std::" << cpp_type << '<' << u
+    ofs << "NB_MAKE_OPAQUE(std::" << cpp_type << '<' << u
         << (v.empty() ? "" : ", " + v) << ">);\n";
   ofs << R"(
-namespace PYBIND11_NAMESPACE {
+namespace NB_NAMESPACE {
 namespace detail {
 template <typename T>
 struct type_caster<std::unique_ptr<T>> {
  public:
-  PYBIND11_TYPE_CASTER(std::unique_ptr<T>, const_name("UniqueT"));
+  NB_TYPE_CASTER(std::unique_ptr<T>, const_name("UniqueT"));
 
   bool load(handle src, bool) {
     try {
@@ -461,7 +459,7 @@ struct type_caster<std::unique_ptr<T>> {
 template <typename T>
 struct type_caster<std::vector<T>> {
  public:
-  PYBIND11_TYPE_CASTER(std::vector<T>, const_name("VectorT"));
+  NB_TYPE_CASTER(std::vector<T>, const_name("VectorT"));
 
   bool load(handle src, bool) {
     list l = reinterpret_borrow<list>(src);
@@ -485,7 +483,7 @@ struct type_caster<std::vector<T>> {
   }
 };
 }  // namespace detail
-}  // namespace PYBIND11_NAMESPACE
+}  // namespace NB_NAMESPACE
 
 namespace ros2_control_py::bind_impl {
 
@@ -494,13 +492,13 @@ namespace py = pybind11;
   for (const std::string& ns : stl_binder.namespaces)
     ofs << "using namespace " << ns << ";\n";
   ofs << R"(
-inline void init(py::module &m)
+inline void init(nb::module &m)
 {
 )";
   for (const auto& [type, cpp_type, u, v] : stl_binder.stl_bind) {
     std::string complete_type =
         "std::" + cpp_type + "<" + u + (v.empty() ? "" : ", " + v) + ">";
-    ofs << "  py::bind_" << type << '<' << complete_type << ">(m, \""
+    ofs << "  nb::bind_" << type << '<' << complete_type << ">(m, \""
         << make_pascal_name(cpp_type, u, v) << "\");\n";
   }
   ofs << "}\n\n}\n";

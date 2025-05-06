@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   fs::create_directories(src_dir);
   ASSERT_DIR(src_dir);
   ASSERT(!ament_prefix_path.empty(), "empty $AMENT_PREFIX_PATH");
-  ASSERT(ros_distro == "humble" || ros_distro == "rolling",
+  ASSERT(ros_distro == "humble" || ros_distro == "jazzy" || ros_distro == "rolling",
          "Unsupported ros distro " << ros_distro);
 
   const bool long_includes = ros_distro != "humble";

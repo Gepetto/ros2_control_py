@@ -1,4 +1,6 @@
+
 cmake_minimum_required(VERSION 3.20)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(ros2_control_py_builder VERSION 0.0.2)
 
@@ -43,11 +45,12 @@ add_subdirectory(builder)
 
 # Vars
 # _ros2_py_src_dir contains the directory where the cpp files are generated.
-set(_ros2_py_src_dir ${CMAKE_SOURCE_DIR}/../ros2_control_python/src)
+set(_ros2_py_src_dir ${CMAKE_SOURCE_DIR}/../ros2_control_py/src)
 set(_ros2_py_src ${_ros2_py_src_dir}/impl_ros2_control_py.cpp)
 
 # calls builder
 # with cmake command.
+message("_ros2_py_src_dir: ${_ros2_py_src_dir}")
 add_custom_command(
   OUTPUT ${_ros2_py_src}
   COMMAND ${CMAKE_COMMAND} -E env "LSAN_OPTIONS=suppressions=${CMAKE_CURRENT_LIST_DIR}/.lsan.supp" $<TARGET_FILE:builder> "${_ros2_py_src_dir}" "$ENV{AMENT_PREFIX_PATH}" "$ENV{ROS_DISTRO}" ${_ros2_py_modules}
