@@ -30,9 +30,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(ros2_control_py_builder REQUIRED)
 # Python deps
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11_vendor REQUIRED)
-find_package(pybind11 REQUIRED)
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(nanobind REQUIRED)
 # ros2_control deps
 foreach(_module ${_ros2_py_modules})
   find_package(${_module} REQUIRED)
@@ -43,7 +42,7 @@ set(_ros2_py_src_dir src)
 set(_ros2_py_src ${_ros2_py_src_dir}/impl_ros2_control_py.cpp)
 
 set(_ros2_py_impl _impl_${PROJECT_NAME})
-pybind11_add_module(${_ros2_py_impl}
+nanobind_add_module(${_ros2_py_impl}
   ${_ros2_py_src}
 )
 # set_target_properties(${_ros2_py_impl}
