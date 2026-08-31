@@ -15,7 +15,7 @@
 repos:
   # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -32,20 +32,20 @@ repos:
       - id: pretty-format-json
       - id: trailing-whitespace
 
-  - repo: https://github.com/psf/black
-    rev: 23.11.0
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
     hooks:
       - id: black
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v17.0.5
+    rev: v23.1.0
     hooks:
     - id: clang-format
       args: [-i]
       types_or: [c++]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.4.3
     hooks:
       - id: codespell
         args: ['--write-changes', '--ignore-words=.codespell_words', '--skip="*.eps"']
