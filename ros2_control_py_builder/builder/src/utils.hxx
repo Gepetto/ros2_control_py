@@ -165,9 +165,9 @@ It find_matching(It begin, It end, char value) {
   std::size_t parens = 0;
   std::size_t brackets = 0;
   std::size_t braces = 0;
-  std::size_t carrets = 0;
+  std::size_t carets = 0;
   const auto all_zero = [&]() {
-    return !parens && !brackets && !braces && !carrets;
+    return !parens && !brackets && !braces && !carets;
   };
   for (auto it = begin; it != end; ++it) {
     if (all_zero() && *it == value) return it;
@@ -194,10 +194,10 @@ It find_matching(It begin, It end, char value) {
         --braces;
         break;
       case '<':
-        ++carrets;
+        ++carets;
         break;
       case '>':
-        if (carrets == 0) return end;
+        if (carets == 0) return end;
         --carrets;
         break;
       default:
