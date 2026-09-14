@@ -18,8 +18,7 @@ def main(argv):
 
     print(f"update rate is {cm.get_update_rate()} Hz")
 
-
-    executor.add_node(cm) #Should be cm.
+    executor.add_node(cm)  # Should be cm.
     executor.spin_some()
 
     # for calculating sleep time
@@ -49,7 +48,9 @@ def main(argv):
         # wait until we hit the end of the period
         next_iteration_time_ns += period
         executor.spin_all(next_iteration_time_ns - cm.now().nanoseconds())
-        sleeping_time = (next_iteration_time_ns - cm.now().nanoseconds()) / 1_000_000_000
+        sleeping_time = (
+            next_iteration_time_ns - cm.now().nanoseconds()
+        ) / 1_000_000_000
         print(sleeping_time)
         sleep(sleeping_time)
 
@@ -61,5 +62,12 @@ if __name__ == "__main__":
     from sys import argv
 
     main(
-        [argv[0], "--ros-args", "-p", f"robot_description:={default_urdf}", "-p", "update_rate:=10"]
+        [
+            argv[0],
+            "--ros-args",
+            "-p",
+            f"robot_description:={default_urdf}",
+            "-p",
+            "update_rate:=10",
+        ]
     )
